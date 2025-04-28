@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Loader } from "lucide-react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -21,8 +21,7 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle,
-  CardFooter
+  CardTitle 
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -55,7 +54,8 @@ export function DrawingsSection() {
     },
   });
   
-  const { fields, append, remove } = form.useFieldArray({
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
     name: "figureDescriptions",
   });
   
