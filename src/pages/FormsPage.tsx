@@ -3,6 +3,8 @@ import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PatentFormSelector } from "@/components/forms/PatentFormSelector";
 import { Form1 } from "@/components/forms/Form1/Form1";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FileText, Info } from "lucide-react";
 
 export default function FormsPage() {
   const [selectedForm, setSelectedForm] = useState<string | null>(null);
@@ -45,9 +47,18 @@ export default function FormsPage() {
         </div>
         
         {!selectedForm ? (
-          <div className="flex justify-center">
-            <PatentFormSelector onSelect={setSelectedForm} />
-          </div>
+          <>
+            <Alert className="mb-6">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Completed forms can be downloaded as Word documents. The system will automatically
+                populate form templates with your entered information.
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-center">
+              <PatentFormSelector onSelect={setSelectedForm} />
+            </div>
+          </>
         ) : (
           renderSelectedForm()
         )}

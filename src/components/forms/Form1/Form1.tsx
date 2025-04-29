@@ -28,11 +28,16 @@ import { ApplicantSection } from "./ApplicantSection";
 import { InventorSection } from "./InventorSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
+import { useGenerateDocument } from "@/hooks/useGenerateDocument";
 
 const form1Schema = z.object({
   // Basic information
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   applicantType: z.enum(["individual", "organization"]),
+  applicationType: z.enum(["ordinary", "convention", "pct-np", "pph"]).default("ordinary"),
   
   // This is a simplified schema - in a real implementation, 
   // we would have more detailed validation and nested objects
@@ -56,12 +61,14 @@ export function Form1() {
   const [step, setStep] = useState(1);
   const totalSteps = 4;
   const [activeTab, setActiveTab] = useState("fillForm");
+  const { generateDocument, isGenerating } = useGenerateDocument();
   
   const form = useForm<Form1Values>({
     resolver: zodResolver(form1Schema),
     defaultValues: {
       title: "",
       applicantType: "individual",
+      applicationType: "ordinary",
       applicantName: "",
       applicantAddress: "",
       applicantNationality: "Indian",
@@ -77,7 +84,6 @@ export function Form1() {
   function onSubmit(data: Form1Values) {
     console.log(data);
     // In a real implementation, this would save to a database
-    // and potentially generate the PDF
     setActiveTab("preview");
   }
 
@@ -90,6 +96,42 @@ export function Form1() {
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1);
+    }
+  };
+
+  const handleDownloadDocument = async () => {
+    try {
+      const data = form.getValues();
+      
+      // Format the data for the template
+      const templateData = {
+        application_no: `IN${new Date().getFullYear()}${String(Math.floor(Math.random() * 100000)).padStart(6, '0')}`,
+        filing_date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        fee_paid: "₹9,000",
+        cbr_no: `CBR-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`,
+        applicant_name: data.applicantName,
+        applicant_nationality: data.applicantNationality,
+        applicant_address: data.applicantAddress,
+        inventor_name: data.inventorName,
+        inventor_nationality: data.inventorNationality,
+        inventor_address: data.inventorAddress,
+        application_type: data.applicationType,
+        invention_title: data.title,
+        additional_info: data.additionalInfo || "",
+      };
+
+      await generateDocument("form1", templateData);
+      toast({
+        title: "Document generated",
+        description: "Your Form 1 document has been generated successfully",
+      });
+    } catch (error) {
+      console.error("Error generating document:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate document. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -132,6 +174,44 @@ export function Form1() {
                             <FormDescription>
                               Keep the title clear, concise and specific to your invention.
                             </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="applicationType"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel className="flex items-center">
+                              Application Type
+                              <FormTooltip content="Select the type of patent application you are filing." />
+                            </FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 gap-4"
+                              >
+                                <div className="flex items-center space-x-2 border rounded p-3 hover:bg-secondary">
+                                  <RadioGroupItem value="ordinary" id="ordinary" />
+                                  <Label htmlFor="ordinary">Ordinary</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 border rounded p-3 hover:bg-secondary">
+                                  <RadioGroupItem value="convention" id="convention" />
+                                  <Label htmlFor="convention">Convention</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 border rounded p-3 hover:bg-secondary">
+                                  <RadioGroupItem value="pct-np" id="pct-np" />
+                                  <Label htmlFor="pct-np">PCT-NP</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 border rounded p-3 hover:bg-secondary">
+                                  <RadioGroupItem value="pph" id="pph" />
+                                  <Label htmlFor="pph">PPH</Label>
+                                </div>
+                              </RadioGroup>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -248,9 +328,16 @@ export function Form1() {
                       <h5 className="font-medium">1. TITLE OF INVENTION</h5>
                       <p className="border p-2 bg-slate-50 rounded">{form.watch("title")}</p>
                     </div>
+
+                    <div>
+                      <h5 className="font-medium">2. TYPE OF APPLICATION</h5>
+                      <div className="border p-2 bg-slate-50 rounded">
+                        <p><strong>Application Type:</strong> {form.watch("applicationType").toUpperCase()}</p>
+                      </div>
+                    </div>
                     
                     <div>
-                      <h5 className="font-medium">2. APPLICANT</h5>
+                      <h5 className="font-medium">3. APPLICANT</h5>
                       <div className="border p-2 bg-slate-50 rounded space-y-1">
                         <p><strong>Name:</strong> {form.watch("applicantName")}</p>
                         <p><strong>Address:</strong> {form.watch("applicantAddress")}</p>
@@ -260,7 +347,7 @@ export function Form1() {
                     </div>
                     
                     <div>
-                      <h5 className="font-medium">3. INVENTOR</h5>
+                      <h5 className="font-medium">4. INVENTOR</h5>
                       <div className="border p-2 bg-slate-50 rounded space-y-1">
                         <p><strong>Name:</strong> {form.watch("inventorName")}</p>
                         <p><strong>Address:</strong> {form.watch("inventorAddress")}</p>
@@ -270,7 +357,7 @@ export function Form1() {
                     
                     {form.watch("additionalInfo") && (
                       <div>
-                        <h5 className="font-medium">4. ADDITIONAL INFORMATION</h5>
+                        <h5 className="font-medium">5. ADDITIONAL INFORMATION</h5>
                         <p className="border p-2 bg-slate-50 rounded whitespace-pre-line">{form.watch("additionalInfo")}</p>
                       </div>
                     )}
@@ -281,8 +368,8 @@ export function Form1() {
                   <Button onClick={() => setActiveTab("fillForm")} variant="outline">
                     Edit Form
                   </Button>
-                  <Button>
-                    Download Form
+                  <Button onClick={handleDownloadDocument} disabled={isGenerating}>
+                    {isGenerating ? "Generating..." : "Generate Word Document"}
                   </Button>
                 </div>
               </div>
