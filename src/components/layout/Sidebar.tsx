@@ -13,6 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CreateProjectButton } from "@/components/projects/CreateProjectButton";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -80,16 +81,17 @@ export function Sidebar() {
       </div>
 
       <div className="p-4">
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full justify-center",
-            collapsed ? "px-0" : "px-4"
-          )}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          {!collapsed && <span>New Project</span>}
-        </Button>
+        {collapsed ? (
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-full h-8"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        ) : (
+          <CreateProjectButton variant="outline" className="w-full" />
+        )}
       </div>
 
       <div className="p-2 border-t border-slate-200">
