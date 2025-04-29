@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const signupSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -34,9 +35,9 @@ type SignupValues = z.infer<typeof signupSchema>;
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function AuthForm() {
-  const [isLoading, setIsLoading] = useState(false);
   const [authType, setAuthType] = useState<"login" | "signup">("login");
   const { toast } = useToast();
+  const { signIn, signUp, isLoading } = useAuth();
 
   const signupForm = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -56,52 +57,20 @@ export function AuthForm() {
   });
 
   async function onSignup(data: SignupValues) {
-    setIsLoading(true);
     try {
-      // Mock signup success for now - will connect to Supabase in future
-      console.log("Signup data:", data);
-      toast({
-        title: "Account created successfully!",
-        description: "Redirecting to your dashboard...",
-      });
-      // Redirect will be implemented once Supabase is connected
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1500);
+      await signUp(data.email, data.password, data.name);
     } catch (error) {
+      // Error is already handled in the Auth context
       console.error("Signup error:", error);
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   }
 
   async function onLogin(data: LoginValues) {
-    setIsLoading(true);
     try {
-      // Mock login success for now - will connect to Supabase in future
-      console.log("Login data:", data);
-      toast({
-        title: "Login successful!",
-        description: "Redirecting to your dashboard...",
-      });
-      // Redirect will be implemented once Supabase is connected
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1500);
+      await signIn(data.email, data.password);
     } catch (error) {
+      // Error is already handled in the Auth context
       console.error("Login error:", error);
-      toast({
-        title: "Error",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   }
 

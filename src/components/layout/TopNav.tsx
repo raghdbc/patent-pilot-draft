@@ -10,8 +10,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TopNav() {
+  const { user, signOut } = useAuth();
+
+  // Get first letter of user's email for avatar fallback
+  const getInitial = () => {
+    if (!user?.email) return "U";
+    return user.email.charAt(0).toUpperCase();
+  };
+
   return (
     <div className="h-16 border-b border-slate-200 px-4 flex items-center justify-between">
       <div>
@@ -28,7 +37,7 @@ export function TopNav() {
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg" alt="User" />
                 <AvatarFallback>
-                  <User className="h-4 w-4" />
+                  {getInitial()}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -36,18 +45,20 @@ export function TopNav() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">User</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.user_metadata?.full_name || "User"}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  user@example.com
+                  {user?.email || ""}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Subscription</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = "/settings"}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = "/settings"}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = "/settings"}>Subscription</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

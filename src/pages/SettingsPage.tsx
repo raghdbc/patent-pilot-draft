@@ -20,16 +20,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
+  const { profile, loading, updateProfile } = useProfile();
+  const { user } = useAuth();
   
-  const handleSave = () => {
+  const [formValues, setFormValues] = useState({
+    full_name: "",
+    organization: "",
+    phone: "",
+  });
+  
+  // Update form values when profile is loaded
+  useState(() => {
+    if (profile) {
+      setFormValues({
+        full_name: profile.full_name || "",
+        organization: profile.organization || "",
+        phone: profile.phone || "",
+      });
+    }
+  });
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-    }, 1500);
+    await updateProfile(formValues);
+    setSaving(false);
   };
   
   return (
@@ -63,29 +88,54 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" defaultValue="John Doe" />
+                {loading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader className="h-6 w-6 animate-spin text-primary" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" defaultValue="john.doe@example.com" type="email" />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Full Name</Label>
+                      <Input 
+                        id="full_name" 
+                        name="full_name"
+                        value={formValues.full_name}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input 
+                        id="email" 
+                        value={user?.email || ""} 
+                        type="email"
+                        disabled 
+                      />
+                      <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="organization">Organization</Label>
+                      <Input 
+                        id="organization" 
+                        name="organization"
+                        value={formValues.organization}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input 
+                        id="phone" 
+                        name="phone"
+                        value={formValues.phone}
+                        onChange={handleChange}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Organization</Label>
-                    <Input id="organization" defaultValue="InvnTree" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" defaultValue="+91 98765 43210" />
-                  </div>
-                </div>
+                )}
               </CardContent>
               <CardFooter>
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving || loading}>
                   {saving && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
                 </Button>
