@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -32,6 +31,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { useGenerateDocument } from "@/hooks/useGenerateDocument";
+import { ApplicantData } from "@/utils/applicantSchema";
 
 const form1Schema = z.object({
   // Basic information
@@ -103,8 +103,9 @@ export function Form1() {
     try {
       const data = form.getValues();
       
-      // Format the data for the template
-      const templateData = {
+      // Format the data for the template based on the ApplicantData schema
+      const templateData: ApplicantData = {
+        application_type: data.applicationType as 'ordinary' | 'convention' | 'pct-np' | 'pph',
         application_no: `IN${new Date().getFullYear()}${String(Math.floor(Math.random() * 100000)).padStart(6, '0')}`,
         filing_date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
         fee_paid: "₹9,000",
@@ -112,12 +113,32 @@ export function Form1() {
         applicant_name: data.applicantName,
         applicant_nationality: data.applicantNationality,
         applicant_address: data.applicantAddress,
+        applicant_category: 'natural_person',
+        
+        inventor_is_applicant: data.applicantType === "individual",
         inventor_name: data.inventorName,
         inventor_nationality: data.inventorNationality,
         inventor_address: data.inventorAddress,
-        application_type: data.applicationType,
-        invention_title: data.title,
-        additional_info: data.additionalInfo || "",
+        
+        title_of_invention: data.title,
+        abstract: "",
+        claims: "",
+        description: data.additionalInfo || "",
+        background: "",
+        
+        declaration_of_inventorship: false,
+        declaration_of_ownership: false,
+        
+        provisional_specification: false,
+        complete_specification: false,
+        drawings: false,
+        sequence_listing: false,
+        
+        invention_field: "",
+        prior_art: "",
+        problem_addressed: "",
+        proposed_solution: "",
+        advantages: "",
       };
 
       await generateDocument("form1", templateData);
