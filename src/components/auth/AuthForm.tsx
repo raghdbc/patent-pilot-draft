@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { PhoneAuthForm } from "./PhoneAuthForm";
 
 const signupSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -35,7 +36,7 @@ type SignupValues = z.infer<typeof signupSchema>;
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function AuthForm() {
-  const [authType, setAuthType] = useState<"login" | "signup">("login");
+  const [authType, setAuthType] = useState<"login" | "signup" | "phone">("login");
   const { toast } = useToast();
   const { signIn, signUp, isLoading } = useAuth();
 
@@ -85,11 +86,12 @@ export function AuthForm() {
       <Tabs
         defaultValue="login"
         value={authType}
-        onValueChange={(value) => setAuthType(value as "login" | "signup")}
+        onValueChange={(value) => setAuthType(value as "login" | "signup" | "phone")}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="login">Email</TabsTrigger>
+          <TabsTrigger value="phone">Phone</TabsTrigger>
           <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
         <TabsContent value="login" className="mt-4">
@@ -148,6 +150,11 @@ export function AuthForm() {
             </a>
           </div>
         </TabsContent>
+        
+        <TabsContent value="phone" className="mt-4">
+          <PhoneAuthForm />
+        </TabsContent>
+
         <TabsContent value="signup" className="mt-4">
           <Form {...signupForm}>
             <form
