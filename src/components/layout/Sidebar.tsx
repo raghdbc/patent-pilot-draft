@@ -4,16 +4,13 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  File,
   FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
   Home,
-  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CreateProjectButton } from "@/components/projects/CreateProjectButton";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -26,14 +23,9 @@ export function Sidebar() {
       href: "/dashboard",
     },
     {
-      title: "Patent Forms",
+      title: "Patent Applications",
       icon: FileText,
       href: "/forms",
-    },
-    {
-      title: "Patent Drafting",
-      icon: File,
-      href: "/drafting",
     },
     {
       title: "Settings",
@@ -81,17 +73,23 @@ export function Sidebar() {
       </div>
 
       <div className="p-4">
-        {collapsed ? (
-          <Button
-            variant="outline"
-            size="icon"
-            className="w-full h-8"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        ) : (
-          <CreateProjectButton variant="outline" className="w-full" />
-        )}
+        <Button
+          variant="outline"
+          size={collapsed ? "icon" : "default"}
+          className="w-full"
+          asChild
+        >
+          <Link to="/forms">
+            {collapsed ? (
+              <FileText className="h-4 w-4" />
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                New Application
+              </>
+            )}
+          </Link>
+        </Button>
       </div>
 
       <div className="p-2 border-t border-slate-200">

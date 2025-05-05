@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { FileText, FilePlus, BookOpen } from "lucide-react";
+import { FileText, BookOpen, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,17 +32,11 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold mb-2 md:mb-0">
             {user ? `Welcome, ${user.user_metadata?.full_name || 'User'}` : 'Dashboard'}
           </h1>
-          <div className="flex gap-3">
+          <div>
             <Button asChild>
               <Link to="/forms">
                 <FileText className="mr-2 h-4 w-4" />
-                New Patent Form
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link to="/drafting">
-                <FilePlus className="mr-2 h-4 w-4" />
-                New Patent Draft
+                New Patent Application
               </Link>
             </Button>
           </div>
@@ -51,7 +45,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg">Patent Forms</CardTitle>
+              <CardTitle className="text-lg">Patents</CardTitle>
               <FileText className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -59,8 +53,8 @@ export default function Dashboard() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <>
-                  <p className="text-3xl font-bold">{formCount}</p>
-                  <p className="text-muted-foreground">Forms in progress</p>
+                  <p className="text-3xl font-bold">{formCount + draftCount}</p>
+                  <p className="text-muted-foreground">Applications in progress</p>
                 </>
               )}
             </CardContent>
@@ -68,16 +62,16 @@ export default function Dashboard() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg">Patent Drafts</CardTitle>
-              <FilePlus className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">Documents</CardTitle>
+              <Download className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {loading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <>
-                  <p className="text-3xl font-bold">{draftCount}</p>
-                  <p className="text-muted-foreground">Drafts in progress</p>
+                  <p className="text-3xl font-bold">{formCount * 2}</p>
+                  <p className="text-muted-foreground">Generated documents</p>
                 </>
               )}
             </CardContent>
@@ -102,7 +96,7 @@ export default function Dashboard() {
         </div>
         
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Recent Projects</h2>
+          <h2 className="text-xl font-bold mb-4">Recent Applications</h2>
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -130,7 +124,7 @@ export default function Dashboard() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
                     <CardDescription>
-                      {project.type === "form" ? "Patent Form" : "Patent Draft"}
+                      Patent Application
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pb-3">
@@ -141,7 +135,7 @@ export default function Dashboard() {
                   </CardContent>
                   <div className="p-3 pt-0">
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to={project.type === "form" ? "/forms" : "/drafting"}>
+                      <Link to="/forms">
                         Continue
                       </Link>
                     </Button>
@@ -151,18 +145,12 @@ export default function Dashboard() {
             </div>
           ) : (
             <Card className="p-6 text-center">
-              <p className="text-muted-foreground mb-4">You don't have any projects yet.</p>
-              <div className="flex justify-center gap-4">
-                <Button asChild size="sm">
+              <p className="text-muted-foreground mb-4">You don't have any patent applications yet.</p>
+              <div className="flex justify-center">
+                <Button asChild>
                   <Link to="/forms">
                     <FileText className="mr-2 h-4 w-4" />
-                    Create Form
-                  </Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link to="/drafting">
-                    <FilePlus className="mr-2 h-4 w-4" />
-                    Create Draft
+                    Create Patent Application
                   </Link>
                 </Button>
               </div>
