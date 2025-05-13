@@ -28,6 +28,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithPhone: (phone: string) => Promise<void>;
+  verifyOTP: (phone: string, token: string) => Promise<void>;
 };
 
 // Create the authentication context
@@ -135,9 +137,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+<<<<<<< HEAD
   /**
    * Sign out the current user
    */
+=======
+  const signInWithPhone = async (phone: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Verification code sent",
+        description: "Please check your phone for the verification code.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Phone verification failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOTP = async (phone: string, token: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.verifyOtp({
+        phone,
+        token,
+        type: 'sms',
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Verification successful",
+        description: "You have been signed in.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Verification failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+>>>>>>> 29be57e4784e9b5b4a903d36404ce24fdee89555
   const signOut = async () => {
     try {
       setIsLoading(true);
@@ -155,7 +216,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Provide authentication context to children
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      isLoading, 
+      signIn, 
+      signUp, 
+      signOut,
+      signInWithPhone,
+      verifyOTP
+    }}>
       {children}
     </AuthContext.Provider>
   );
