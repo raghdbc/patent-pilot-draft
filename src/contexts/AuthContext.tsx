@@ -1,10 +1,26 @@
+/**
+ * Authentication Context
+ * 
+ * Provides authentication state and methods throughout the application.
+ * Handles user sign-in, sign-up, and sign-out functionality using Supabase.
+ * Manages authentication state and session persistence.
+ */
 
+// React and Routing
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Supabase Integration
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+
+// UI Components
 import { toast } from "@/hooks/use-toast";
 
+/**
+ * Authentication Context Type Definition
+ * Defines the shape of the authentication context and its methods
+ */
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -14,43 +30,55 @@ type AuthContextType = {
   signOut: () => Promise<void>;
 };
 
+// Create the authentication context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * AuthProvider Component
+ * 
+ * Provides authentication state and methods to the application.
+ * Manages user sessions and authentication state changes.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // State management
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Set up authentication state listener
   useEffect(() => {
-    // Set up auth state listener first
+    // Listen for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
+        // Handle navigation based on auth events
         if (event === 'SIGNED_IN' && currentSession) {
-          // User has signed in
           navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
-          // User has signed out
           navigate('/login');
         }
       }
     );
 
-    // Then check for existing session
+    // Check for existing session on mount
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
 
+  /**
+   * Sign in with email and password
+   */
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
@@ -71,6 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Sign up with email, password, and name
+   */
   const signUp = async (email: string, password: string, name: string) => {
     try {
       setIsLoading(true);
@@ -104,6 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Sign out the current user
+   */
   const signOut = async () => {
     try {
       setIsLoading(true);
@@ -119,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Provide authentication context to children
   return (
     <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
       {children}
@@ -126,6 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Custom hook to use the authentication context
+ * @throws Error if used outside of AuthProvider
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
