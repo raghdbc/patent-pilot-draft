@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -379,7 +378,7 @@ export function PatentApplicationForm() {
                       )}
                     />
                     
-                    {field.value === 'Complete' && (
+                    {applicationType === 'Complete' && (
                       <div className="space-y-4 border-l-2 pl-4 ml-2 border-muted">
                         <FormField
                           control={form.control}
