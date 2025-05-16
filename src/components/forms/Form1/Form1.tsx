@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { useGenerateDocument } from "@/hooks/useGenerateDocument";
 import { ApplicantData } from "@/utils/applicantSchema";
+import { supabase } from "@/integrations/supabase/client";
+import { createPatentApplication, formDataToApplicantData, updatePatentApplication } from "@/services/patentService";
+import { Loader2, Save } from "lucide-react";
 
 const form1Schema = z.object({
   // Basic information
@@ -62,6 +66,8 @@ export function Form1() {
   const totalSteps = 4;
   const [activeTab, setActiveTab] = useState("fillForm");
   const { generateDocument, isGenerating } = useGenerateDocument();
+  const [isSaving, setIsSaving] = useState(false);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
   
   const form = useForm<Form1Values>({
     resolver: zodResolver(form1Schema),
@@ -81,10 +87,87 @@ export function Form1() {
     },
   });
 
-  function onSubmit(data: Form1Values) {
-    console.log(data);
-    // In a real implementation, this would save to a database
-    setActiveTab("preview");
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to save your patent applications.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  async function onSubmit(data: Form1Values) {
+    try {
+      setIsSaving(true);
+      
+      // Check authentication status
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to save your patent applications.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Prepare data to save
+      const patentData = {
+        user_id: session.user.id,
+        title: data.title,
+        application_type: data.applicationType,
+        applicant_type: data.applicantType,
+        applicant_name: data.applicantName,
+        applicant_address: data.applicantAddress,
+        applicant_nationality: data.applicantNationality,
+        inventor_name: data.inventorName,
+        inventor_address: data.inventorAddress,
+        inventor_nationality: data.inventorNationality,
+        claim_priority: data.claimPriority,
+        priority_details: data.priorityDetails,
+        additional_info: data.additionalInfo,
+        status: "draft",
+      };
+      
+      let savedApplication;
+      
+      if (applicationId) {
+        // Update existing application
+        savedApplication = await updatePatentApplication(applicationId, patentData);
+        toast({
+          title: "Application updated",
+          description: "Your patent application has been updated successfully.",
+        });
+      } else {
+        // Create new application
+        savedApplication = await createPatentApplication(patentData);
+        setApplicationId(savedApplication.id);
+        toast({
+          title: "Application saved",
+          description: "Your patent application has been saved successfully.",
+        });
+      }
+      
+      // Switch to preview tab
+      setActiveTab("preview");
+    } catch (error) {
+      console.error("Error saving application:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save your application. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const nextStep = () => {
@@ -99,47 +182,85 @@ export function Form1() {
     }
   };
 
+  const handleSaveProgress = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Check authentication status
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to save your patent applications.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Get current form values, even if not complete
+      const currentData = form.getValues();
+      
+      // Prepare data to save
+      const patentData = {
+        user_id: session.user.id,
+        title: currentData.title || "Untitled Application",
+        application_type: currentData.applicationType,
+        applicant_type: currentData.applicantType,
+        applicant_name: currentData.applicantName || "",
+        applicant_address: currentData.applicantAddress || "",
+        applicant_nationality: currentData.applicantNationality || "Indian",
+        inventor_name: currentData.inventorName || "",
+        inventor_address: currentData.inventorAddress || "",
+        inventor_nationality: currentData.inventorNationality || "Indian",
+        claim_priority: currentData.claimPriority,
+        priority_details: currentData.priorityDetails || "",
+        additional_info: currentData.additionalInfo || "",
+        status: "draft",
+      };
+      
+      let savedApplication;
+      
+      if (applicationId) {
+        // Update existing application
+        savedApplication = await updatePatentApplication(applicationId, patentData);
+      } else {
+        // Create new application
+        savedApplication = await createPatentApplication(patentData);
+        setApplicationId(savedApplication.id);
+      }
+      
+      toast({
+        title: "Progress saved",
+        description: "Your progress has been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving progress:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save your progress. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDownloadDocument = async () => {
     try {
       const data = form.getValues();
       
+      // Check if application is saved
+      if (!applicationId) {
+        await onSubmit(data);
+      }
+      
       // Format the data for the template based on the ApplicantData schema
-      const templateData: ApplicantData = {
-        application_type: data.applicationType as 'ordinary' | 'convention' | 'pct-np' | 'pph',
-        application_no: `IN${new Date().getFullYear()}${String(Math.floor(Math.random() * 100000)).padStart(6, '0')}`,
-        filing_date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-        fee_paid: "₹9,000",
-        cbr_no: `CBR-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`,
-        applicant_name: data.applicantName,
-        applicant_nationality: data.applicantNationality,
-        applicant_address: data.applicantAddress,
-        applicant_category: 'natural_person',
-        
-        inventor_is_applicant: data.applicantType === "individual",
-        inventor_name: data.inventorName,
-        inventor_nationality: data.inventorNationality,
-        inventor_address: data.inventorAddress,
-        
-        title_of_invention: data.title,
-        abstract: "",
-        claims: "",
-        description: data.additionalInfo || "",
-        background: "",
-        
-        declaration_of_inventorship: false,
-        declaration_of_ownership: false,
-        
-        provisional_specification: false,
-        complete_specification: false,
-        drawings: false,
-        sequence_listing: false,
-        
-        invention_field: "",
-        prior_art: "",
-        problem_addressed: "",
-        proposed_solution: "",
-        advantages: "",
-      };
+      const templateData: ApplicantData = formDataToApplicantData({
+        ...data,
+        id: applicationId,
+        created_at: new Date().toISOString(),
+      });
 
       await generateDocument("form1", templateData);
       toast({
@@ -160,15 +281,25 @@ export function Form1() {
     <div className="space-y-6 animate-fade-in">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            Form 1 - Application for Grant of Patent
+          <CardTitle className="flex items-center justify-between">
+            <span>Form 1 - Application for Grant of Patent</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSaveProgress} 
+              disabled={isSaving}
+              className="flex items-center gap-2"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Progress
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="fillForm">Fill Form</TabsTrigger>
-              <TabsTrigger value="preview" disabled={!form.formState.isSubmitted}>Preview & Download</TabsTrigger>
+              <TabsTrigger value="preview" disabled={!form.formState.isSubmitted && !applicationId}>Preview & Download</TabsTrigger>
             </TabsList>
             
             <TabsContent value="fillForm" className="space-y-6 mt-6">
@@ -324,8 +455,15 @@ export function Form1() {
                         Next
                       </Button>
                     ) : (
-                      <Button type="submit">
-                        Complete Form
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Complete Form"
+                        )}
                       </Button>
                     )}
                   </div>

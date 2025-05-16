@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { ApplicantData } from '@/utils/applicantSchema';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 // This is a simplified client-side implementation
 // In a production environment, this would be handled by a server using python-docxtpl
@@ -72,12 +72,7 @@ export function useGenerateDocument() {
         URL.revokeObjectURL(url);
       }, 100);
       
-      toast({
-        title: "Document generated",
-        description: `${fileName} has been downloaded.`,
-      });
-      
-      console.log('Document generated successfully');
+      // In a production app, we would also update the database to record the document generation
       
       return Promise.resolve();
     } catch (error) {

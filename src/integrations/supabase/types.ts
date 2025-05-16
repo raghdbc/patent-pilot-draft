@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      patent_applications: {
+        Row: {
+          abstract: string | null
+          additional_info: string | null
+          applicant_address: string
+          applicant_name: string
+          applicant_nationality: string
+          applicant_type: string
+          application_type: string
+          background: string | null
+          claim_priority: boolean | null
+          claims: string | null
+          created_at: string
+          description: string | null
+          id: string
+          inventor_address: string
+          inventor_name: string
+          inventor_nationality: string
+          priority_details: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          abstract?: string | null
+          additional_info?: string | null
+          applicant_address: string
+          applicant_name: string
+          applicant_nationality: string
+          applicant_type: string
+          application_type: string
+          background?: string | null
+          claim_priority?: boolean | null
+          claims?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          inventor_address: string
+          inventor_name: string
+          inventor_nationality: string
+          priority_details?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          abstract?: string | null
+          additional_info?: string | null
+          applicant_address?: string
+          applicant_name?: string
+          applicant_nationality?: string
+          applicant_type?: string
+          application_type?: string
+          background?: string | null
+          claim_priority?: boolean | null
+          claims?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          inventor_address?: string
+          inventor_name?: string
+          inventor_nationality?: string
+          priority_details?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
