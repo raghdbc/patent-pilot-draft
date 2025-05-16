@@ -1,3 +1,4 @@
+
 /**
  * Authentication Context
  * 
@@ -137,11 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-<<<<<<< HEAD
   /**
-   * Sign out the current user
+   * Sign in with phone number
    */
-=======
   const signInWithPhone = async (phone: string) => {
     try {
       setIsLoading(true);
@@ -169,6 +168,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Verify one-time password for phone authentication
+   */
   const verifyOTP = async (phone: string, token: string) => {
     try {
       setIsLoading(true);
@@ -198,7 +200,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
->>>>>>> 29be57e4784e9b5b4a903d36404ce24fdee89555
+  /**
+   * Sign out the current user
+   */
   const signOut = async () => {
     try {
       setIsLoading(true);
