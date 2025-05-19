@@ -25,47 +25,31 @@ export function InventorSection({ form }: InventorSectionProps) {
     "Other"
   ];
   
-  const [inventorAsApplicant, setInventorAsApplicant] = useState(false);
+  const [inventorAsApplicant, setInventorAsApplicant] = useState(true);
 
-  // Watch for changes in applicant name to disable manual editing when inventor as applicant is enabled
-  const applicantName = form.watch("applicantName");
-  const applicantAddress = form.watch("applicantAddress");
-  const applicantNationality = form.watch("applicantNationality");
+  // Watch for changes in inventor fields
+  const inventorName = form.watch("inventorName");
+  const inventorAddress = form.watch("inventorAddress");
+  const inventorNationality = form.watch("inventorNationality");
   
-  // Check if user manually changed the applicant field while inventor as applicant was checked
   useEffect(() => {
-    if (inventorAsApplicant) {
-      // Sync inventor data to applicant data
-      const inventorName = form.getValues("inventorName");
-      const inventorAddress = form.getValues("inventorAddress");
-      const inventorNationality = form.getValues("inventorNationality");
-      
+    // Sync inventor data to applicant data when checkbox is checked
+    if (inventorAsApplicant && (inventorName || inventorAddress || inventorNationality)) {
       form.setValue("applicantName", inventorName);
       form.setValue("applicantAddress", inventorAddress);
       form.setValue("applicantNationality", inventorNationality);
     }
-  }, [inventorAsApplicant, form]);
+  }, [inventorAsApplicant, inventorName, inventorAddress, inventorNationality, form]);
 
   const handleInventorAsApplicantChange = (checked: boolean) => {
     setInventorAsApplicant(checked);
-    
-    if (checked) {
-      // Copy inventor details to applicant fields
-      const inventorName = form.getValues("inventorName");
-      const inventorAddress = form.getValues("inventorAddress");
-      const inventorNationality = form.getValues("inventorNationality");
-      
-      form.setValue("applicantName", inventorName);
-      form.setValue("applicantAddress", inventorAddress);
-      form.setValue("applicantNationality", inventorNationality);
-    }
   };
 
   return (
     <div className="space-y-4 animate-slide-in">
       <h3 className="text-lg font-medium">Inventor Details</h3>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 mb-4 p-3 bg-slate-50 rounded-md border">
         <Checkbox 
           id="inventor-as-applicant" 
           checked={inventorAsApplicant}
@@ -73,10 +57,11 @@ export function InventorSection({ form }: InventorSectionProps) {
         />
         <label
           htmlFor="inventor-as-applicant"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          Use inventor details as applicant
+          Use inventors as applicants
         </label>
+        <FormTooltip content="Checking this will automatically add all inventors as applicants" />
       </div>
       
       <FormField
@@ -91,13 +76,7 @@ export function InventorSection({ form }: InventorSectionProps) {
             <FormControl>
               <Input 
                 placeholder="Enter inventor name" 
-                {...field} 
-                onChange={(e) => {
-                  field.onChange(e);
-                  if (inventorAsApplicant) {
-                    form.setValue("applicantName", e.target.value);
-                  }
-                }}
+                {...field}
               />
             </FormControl>
             <FormDescription>
@@ -121,12 +100,6 @@ export function InventorSection({ form }: InventorSectionProps) {
               <Input 
                 placeholder="Enter complete address" 
                 {...field}
-                onChange={(e) => {
-                  field.onChange(e);
-                  if (inventorAsApplicant) {
-                    form.setValue("applicantAddress", e.target.value);
-                  }
-                }}
               />
             </FormControl>
             <FormDescription>
@@ -147,12 +120,7 @@ export function InventorSection({ form }: InventorSectionProps) {
               <FormTooltip content="Nationality of the inventor as per their passport or citizenship." />
             </FormLabel>
             <Select
-              onValueChange={(value) => {
-                field.onChange(value);
-                if (inventorAsApplicant) {
-                  form.setValue("applicantNationality", value);
-                }
-              }}
+              onValueChange={field.onChange}
               defaultValue={field.value}
             >
               <FormControl>
@@ -172,7 +140,7 @@ export function InventorSection({ form }: InventorSectionProps) {
       />
       
       {inventorAsApplicant && (
-        <div className="p-3 bg-slate-50 rounded-md border text-sm">
+        <div className="p-3 bg-blue-50 rounded-md border border-blue-200 text-sm">
           <p className="font-medium">Applicant details will automatically use the inventor details</p>
           <p className="text-muted-foreground mt-1">Uncheck the option above to edit applicant details separately</p>
         </div>
