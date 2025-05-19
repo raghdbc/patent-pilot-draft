@@ -22,6 +22,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { DraftSectionProps } from "../DraftingSectionContent";
 
 const summaryFormSchema = z.object({
   inventionPurpose: z.string().min(20, {
@@ -37,10 +38,10 @@ const summaryFormSchema = z.object({
 
 type SummaryFormValues = z.infer<typeof summaryFormSchema>;
 
-export function SummarySection() {
+export function SummarySection({ content, onChange }: DraftSectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [showGenerated, setShowGenerated] = useState(false);
+  const [draftText, setDraftText] = useState(content || "");
+  const [showGenerated, setShowGenerated] = useState(!!content);
   
   const form = useForm<SummaryFormValues>({
     resolver: zodResolver(summaryFormSchema),
@@ -71,6 +72,7 @@ ${data.advantages}
 The present invention substantially departs from the conventional concepts and designs of the prior art, and in doing so provides an apparatus and method that substantially fulfills the above-described needs and overcomes the disadvantages inherent in traditional approaches.
       `;
       setDraftText(generatedText);
+      onChange(generatedText);
       setGeneratingDraft(false);
       setShowGenerated(true);
     }, 2000);
@@ -83,8 +85,16 @@ The present invention substantially departs from the conventional concepts and d
     setTimeout(() => {
       const rephrasedText = draftText + "\n\n[This section has been rephrased for improved technical accuracy.]";
       setDraftText(rephrasedText);
+      onChange(rephrasedText);
       setGeneratingDraft(false);
     }, 1500);
+  };
+  
+  // Update local draft text when external content changes
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDraftText(newText);
+    onChange(newText);
   };
   
   return (
@@ -173,7 +183,7 @@ The present invention substantially departs from the conventional concepts and d
             <div className="space-y-4">
               <Textarea
                 value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
+                onChange={handleTextChange}
                 className="min-h-[400px] font-serif"
                 disabled={generatingDraft}
               />
