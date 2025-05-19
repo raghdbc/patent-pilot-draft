@@ -1,14 +1,15 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
+  Home,
   FileText,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Home,
+  FileEdit,
+  BookOpen,
+  Users,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,18 +20,33 @@ export function Sidebar() {
   const navItems = [
     {
       title: "Dashboard",
-      icon: Home,
       href: "/dashboard",
+      icon: <Home className="h-4 w-4" />,
     },
     {
-      title: "Patent Applications",
-      icon: FileText,
+      title: "Patent Forms",
       href: "/forms",
+      icon: <FileText className="h-4 w-4" />,
+    },
+    {
+      title: "Patent Drafting",
+      href: "/drafting",
+      icon: <FileEdit className="h-4 w-4" />,
+    },
+    {
+      title: "Filing Guide",
+      href: "/filing-guide",
+      icon: <BookOpen className="h-4 w-4" />,
+    },
+    {
+      title: "Agent Details",
+      href: "/agent-details",
+      icon: <UserCog className="h-4 w-4" />,
     },
     {
       title: "Settings",
-      icon: Settings,
       href: "/settings",
+      icon: <Settings className="h-4 w-4" />,
     },
   ];
 

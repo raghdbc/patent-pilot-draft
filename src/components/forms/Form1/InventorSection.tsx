@@ -5,6 +5,7 @@ import { FormTooltip } from "../FormTooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
+import { useState, useEffect } from "react";
 
 interface InventorSectionProps {
   form: UseFormReturn<any>;
@@ -24,7 +25,41 @@ export function InventorSection({ form }: InventorSectionProps) {
     "Other"
   ];
   
-  const applicantIsInventor = form.watch("applicantName") === form.watch("inventorName");
+  const [inventorAsApplicant, setInventorAsApplicant] = useState(false);
+
+  // Watch for changes in applicant name to disable manual editing when inventor as applicant is enabled
+  const applicantName = form.watch("applicantName");
+  const applicantAddress = form.watch("applicantAddress");
+  const applicantNationality = form.watch("applicantNationality");
+  
+  // Check if user manually changed the applicant field while inventor as applicant was checked
+  useEffect(() => {
+    if (inventorAsApplicant) {
+      // Sync inventor data to applicant data
+      const inventorName = form.getValues("inventorName");
+      const inventorAddress = form.getValues("inventorAddress");
+      const inventorNationality = form.getValues("inventorNationality");
+      
+      form.setValue("applicantName", inventorName);
+      form.setValue("applicantAddress", inventorAddress);
+      form.setValue("applicantNationality", inventorNationality);
+    }
+  }, [inventorAsApplicant, form]);
+
+  const handleInventorAsApplicantChange = (checked: boolean) => {
+    setInventorAsApplicant(checked);
+    
+    if (checked) {
+      // Copy inventor details to applicant fields
+      const inventorName = form.getValues("inventorName");
+      const inventorAddress = form.getValues("inventorAddress");
+      const inventorNationality = form.getValues("inventorNationality");
+      
+      form.setValue("applicantName", inventorName);
+      form.setValue("applicantAddress", inventorAddress);
+      form.setValue("applicantNationality", inventorNationality);
+    }
+  };
 
   return (
     <div className="space-y-4 animate-slide-in">
@@ -32,24 +67,15 @@ export function InventorSection({ form }: InventorSectionProps) {
       
       <div className="flex items-center space-x-2">
         <Checkbox 
-          id="applicant-is-inventor" 
-          checked={applicantIsInventor}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              form.setValue("inventorName", form.getValues("applicantName"));
-              form.setValue("inventorAddress", form.getValues("applicantAddress"));
-              form.setValue("inventorNationality", form.getValues("applicantNationality"));
-            } else {
-              form.setValue("inventorName", "");
-              form.setValue("inventorAddress", "");
-            }
-          }}
+          id="inventor-as-applicant" 
+          checked={inventorAsApplicant}
+          onCheckedChange={(checked) => handleInventorAsApplicantChange(!!checked)}
         />
         <label
-          htmlFor="applicant-is-inventor"
+          htmlFor="inventor-as-applicant"
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          Applicant is also the inventor
+          Use inventor details as applicant
         </label>
       </div>
       
@@ -63,7 +89,16 @@ export function InventorSection({ form }: InventorSectionProps) {
               <FormTooltip content="The inventor is the person who actually created the invention. This may be different from the applicant/patent owner." />
             </FormLabel>
             <FormControl>
-              <Input placeholder="Enter inventor name" {...field} />
+              <Input 
+                placeholder="Enter inventor name" 
+                {...field} 
+                onChange={(e) => {
+                  field.onChange(e);
+                  if (inventorAsApplicant) {
+                    form.setValue("applicantName", e.target.value);
+                  }
+                }}
+              />
             </FormControl>
             <FormDescription>
               Full name of the person who created the invention.
@@ -83,7 +118,16 @@ export function InventorSection({ form }: InventorSectionProps) {
               <FormTooltip content="Provide the complete postal address of the inventor, including postal/zip code." />
             </FormLabel>
             <FormControl>
-              <Input placeholder="Enter complete address" {...field} />
+              <Input 
+                placeholder="Enter complete address" 
+                {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  if (inventorAsApplicant) {
+                    form.setValue("applicantAddress", e.target.value);
+                  }
+                }}
+              />
             </FormControl>
             <FormDescription>
               Complete postal address including city, state and pin code.
@@ -103,7 +147,12 @@ export function InventorSection({ form }: InventorSectionProps) {
               <FormTooltip content="Nationality of the inventor as per their passport or citizenship." />
             </FormLabel>
             <Select
-              onValueChange={field.onChange}
+              onValueChange={(value) => {
+                field.onChange(value);
+                if (inventorAsApplicant) {
+                  form.setValue("applicantNationality", value);
+                }
+              }}
               defaultValue={field.value}
             >
               <FormControl>
@@ -121,6 +170,13 @@ export function InventorSection({ form }: InventorSectionProps) {
           </FormItem>
         )}
       />
+      
+      {inventorAsApplicant && (
+        <div className="p-3 bg-slate-50 rounded-md border text-sm">
+          <p className="font-medium">Applicant details will automatically use the inventor details</p>
+          <p className="text-muted-foreground mt-1">Uncheck the option above to edit applicant details separately</p>
+        </div>
+      )}
     </div>
   );
 }

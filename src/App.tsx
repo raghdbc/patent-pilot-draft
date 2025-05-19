@@ -30,6 +30,10 @@ import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import FormsPage from "./pages/FormsPage";
 import DraftingPage from "./pages/DraftingPage";
+import FilingGuidePage from "./pages/FilingGuidePage";
+import SettingsPage from "./pages/SettingsPage";
+import AdminPage from "./pages/AdminPage";
+import AgentDetailsPage from "./pages/AgentDetailsPage";
 import NotFound from "./pages/NotFound";
 
 // Initialize React Query client
@@ -42,44 +46,87 @@ const queryClient = new QueryClient();
  * Protected routes are wrapped with the ProtectedRoute component
  * to ensure authentication before access.
  */
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      {/* Toast notifications for user feedback */}
-      <Toaster />
-      <Sonner />
-      
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Protected Routes - Require Authentication */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/forms" element={
-              <ProtectedRoute>
-                <FormsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/drafting" element={
-              <ProtectedRoute>
-                <DraftingPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Fallback Route - 404 Page */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        {/* Toast notifications for user feedback */}
+        <Toaster />
+        <Sonner />
+        
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Protected Routes - Require Authentication */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/forms" 
+                element={
+                  <ProtectedRoute>
+                    <FormsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/drafting" 
+                element={
+                  <ProtectedRoute>
+                    <DraftingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/filing-guide" 
+                element={
+                  <ProtectedRoute>
+                    <FilingGuidePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/agent-details" 
+                element={
+                  <ProtectedRoute>
+                    <AgentDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Fallback Route - 404 Page */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
