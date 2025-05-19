@@ -23,6 +23,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DraftSectionProps } from "../DraftingSectionContent";
 
 const abstractFormSchema = z.object({
   problemStatement: z.string().min(20, {
@@ -38,11 +39,11 @@ const abstractFormSchema = z.object({
 
 type AbstractFormValues = z.infer<typeof abstractFormSchema>;
 
-export function AbstractSection() {
+export function AbstractSection({ content, onChange }: DraftSectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [showGenerated, setShowGenerated] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
+  const [draftText, setDraftText] = useState(content || "");
+  const [showGenerated, setShowGenerated] = useState(!!content);
+  const [wordCount, setWordCount] = useState(content ? content.trim().split(/\s+/).length : 0);
   
   const form = useForm<AbstractFormValues>({
     resolver: zodResolver(abstractFormSchema),
@@ -68,6 +69,7 @@ ${data.problemStatement} ${data.solution} ${data.mainElements}
       setWordCount(generatedText.trim().split(/\s+/).length);
       setGeneratingDraft(false);
       setShowGenerated(true);
+      onChange(generatedText);
     }, 2000);
   }
   
@@ -80,7 +82,15 @@ ${data.problemStatement} ${data.solution} ${data.mainElements}
       setDraftText(rephrasedText);
       setWordCount(rephrasedText.trim().split(/\s+/).length);
       setGeneratingDraft(false);
+      onChange(rephrasedText);
     }, 1500);
+  };
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDraftText(newText);
+    setWordCount(newText.trim().split(/\s+/).length);
+    onChange(newText);
   };
   
   return (
@@ -191,10 +201,7 @@ ${data.problemStatement} ${data.solution} ${data.mainElements}
               
               <Textarea
                 value={draftText}
-                onChange={(e) => {
-                  setDraftText(e.target.value);
-                  setWordCount(e.target.value.trim().split(/\s+/).length);
-                }}
+                onChange={handleTextChange}
                 className="min-h-[200px] font-serif"
                 disabled={generatingDraft}
               />

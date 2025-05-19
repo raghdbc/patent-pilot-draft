@@ -3,37 +3,56 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader } from "lucide-react";
+import { SectionContent } from "./DraftingContext";
 
-export function DraftPreview() {
+interface DraftPreviewProps {
+  sections: SectionContent;
+  onSave: () => void;
+  isSaving: boolean;
+}
+
+export function DraftPreview({ sections, onSave, isSaving }: DraftPreviewProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   
-  // This would actually pull data from context or props in a real implementation
-  const sampleDraft = `
-  PATENT SPECIFICATION
+  // Generate formatted draft from all sections
+  const generateFormattedDraft = () => {
+    const parts = [];
+    
+    parts.push("PATENT SPECIFICATION\n\n");
+    
+    if (sections.title) {
+      parts.push(`TITLE: ${sections.title.toUpperCase()}\n\n`);
+    }
+    
+    if (sections.background) {
+      parts.push(sections.background + "\n\n");
+    }
+    
+    if (sections.summary) {
+      parts.push(sections.summary + "\n\n");
+    }
+    
+    if (sections.drawings) {
+      parts.push(sections.drawings + "\n\n");
+    }
+    
+    if (sections.description) {
+      parts.push(sections.description + "\n\n");
+    }
+    
+    if (sections.claims) {
+      parts.push(sections.claims + "\n\n");
+    }
+    
+    if (sections.abstract) {
+      parts.push(sections.abstract);
+    }
+    
+    return parts.join("");
+  };
   
-  TITLE: METHOD AND SYSTEM FOR AUTOMATED PATENT DRAFTING
-  
-  BACKGROUND OF THE INVENTION
-  
-  Field of Invention:
-  The present invention relates to the field of intellectual property management software, specifically to systems and methods for assisting in the preparation and filing of patent applications.
-  
-  Problem Addressed:
-  The process of drafting patent applications requires specialized knowledge and expertise in legal and technical writing. Many inventors, particularly students and first-time inventors, lack this knowledge, resulting in poorly drafted applications that may be rejected or provide inadequate protection.
-  
-  Prior Art:
-  Existing patent drafting solutions include template-based word processors, general AI writing assistants, and complex patent management software designed for law firms. These solutions either provide minimal guidance or are prohibitively complex and expensive for occasional users.
-  
-  Limitations of Prior Art:
-  Template-based solutions lack educational components and don't adapt to the specific invention. General AI tools aren't trained specifically for patent drafting and may not comply with legal requirements. Professional patent management software is typically expensive and has steep learning curves unsuitable for students or first-time inventors.
-  
-  SUMMARY OF THE INVENTION
-  
-  The present invention provides a web-based system for guiding users through the patent drafting process using artificial intelligence. The system combines educational components, guided form filling, and AI-assisted content generation to help users with minimal patent knowledge create professional-quality patent applications.
-  
-  [... document continues with all sections ...]
-  `;
+  const sampleDraft = generateFormattedDraft();
   
   const handleDownload = () => {
     setIsDownloading(true);

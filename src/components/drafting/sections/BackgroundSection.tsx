@@ -20,10 +20,10 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { DraftSectionProps } from "../DraftingSectionContent";
 
 const backgroundFormSchema = z.object({
   fieldOfInvention: z.string().min(5, {
@@ -42,10 +42,10 @@ const backgroundFormSchema = z.object({
 
 type BackgroundFormValues = z.infer<typeof backgroundFormSchema>;
 
-export function BackgroundSection() {
+export function BackgroundSection({ content, onChange }: DraftSectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [showGenerated, setShowGenerated] = useState(false);
+  const [draftText, setDraftText] = useState(content || "");
+  const [showGenerated, setShowGenerated] = useState(!!content);
   
   const form = useForm<BackgroundFormValues>({
     resolver: zodResolver(backgroundFormSchema),
@@ -82,6 +82,7 @@ The present invention addresses these limitations by providing a novel solution 
       setDraftText(generatedText);
       setGeneratingDraft(false);
       setShowGenerated(true);
+      onChange(generatedText);
     }, 2000);
   }
   
@@ -93,7 +94,14 @@ The present invention addresses these limitations by providing a novel solution 
       const rephrasedText = draftText + "\n\n[This section has been rephrased to improve clarity and technical precision.]";
       setDraftText(rephrasedText);
       setGeneratingDraft(false);
+      onChange(rephrasedText);
     }, 1500);
+  };
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDraftText(newText);
+    onChange(newText);
   };
   
   return (
@@ -202,7 +210,7 @@ The present invention addresses these limitations by providing a novel solution 
             <div className="space-y-4">
               <Textarea
                 value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
+                onChange={handleTextChange}
                 className="min-h-[400px] font-serif"
                 disabled={generatingDraft}
               />

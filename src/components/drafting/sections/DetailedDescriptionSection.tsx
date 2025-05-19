@@ -22,6 +22,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { DraftSectionProps } from "../DraftingSectionContent";
 
 const detailedDescriptionSchema = z.object({
   structure: z.string().min(50, {
@@ -38,10 +39,10 @@ const detailedDescriptionSchema = z.object({
 
 type DetailedDescriptionValues = z.infer<typeof detailedDescriptionSchema>;
 
-export function DetailedDescriptionSection() {
+export function DetailedDescriptionSection({ content, onChange }: DraftSectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [showGenerated, setShowGenerated] = useState(false);
+  const [draftText, setDraftText] = useState(content || "");
+  const [showGenerated, setShowGenerated] = useState(!!content);
   
   const form = useForm<DetailedDescriptionValues>({
     resolver: zodResolver(detailedDescriptionSchema),
@@ -78,6 +79,7 @@ ${data.alternativeEmbodiments}
       setDraftText(generatedText);
       setGeneratingDraft(false);
       setShowGenerated(true);
+      onChange(generatedText);
     }, 3000);
   }
   
@@ -89,7 +91,14 @@ ${data.alternativeEmbodiments}
       const rephrasedText = draftText + "\n\n[This section has been rephrased with more technical precision.]";
       setDraftText(rephrasedText);
       setGeneratingDraft(false);
+      onChange(rephrasedText);
     }, 2000);
+  };
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDraftText(newText);
+    onChange(newText);
   };
   
   return (
@@ -199,7 +208,7 @@ ${data.alternativeEmbodiments}
             <div className="space-y-4">
               <Textarea
                 value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
+                onChange={handleTextChange}
                 className="min-h-[500px] font-serif"
                 disabled={generatingDraft}
               />

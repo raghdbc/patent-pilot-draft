@@ -24,6 +24,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DraftSectionProps } from "../DraftingSectionContent";
 
 const drawingsFormSchema = z.object({
   figureDescriptions: z.array(
@@ -40,10 +41,10 @@ const drawingsFormSchema = z.object({
 
 type DrawingsFormValues = z.infer<typeof drawingsFormSchema>;
 
-export function DrawingsSection() {
+export function DrawingsSection({ content, onChange }: DraftSectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [showGenerated, setShowGenerated] = useState(false);
+  const [draftText, setDraftText] = useState(content || "");
+  const [showGenerated, setShowGenerated] = useState(!!content);
   
   const form = useForm<DrawingsFormValues>({
     resolver: zodResolver(drawingsFormSchema),
@@ -75,6 +76,7 @@ export function DrawingsSection() {
       setDraftText(generatedText);
       setGeneratingDraft(false);
       setShowGenerated(true);
+      onChange(generatedText);
     }, 2000);
   }
   
@@ -86,7 +88,14 @@ export function DrawingsSection() {
       const rephrasedText = draftText + "\n\n[This section has been rephrased for improved clarity.]";
       setDraftText(rephrasedText);
       setGeneratingDraft(false);
+      onChange(rephrasedText);
     }, 1500);
+  };
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDraftText(newText);
+    onChange(newText);
   };
   
   return (
