@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SheetCountTable } from "./SheetCountTable";
@@ -54,7 +54,7 @@ export function FeeCalculator({ form, userRole = 'user' }: FeeCalculatorProps) {
   };
 
   // Update form values when sheet counts change
-  React.useEffect(() => {
+  useEffect(() => {
     form.setValue('sheetCount', totalSheetCount);
     form.setValue('fees', fees.totalFee);
     form.setValue('feeDetails', {

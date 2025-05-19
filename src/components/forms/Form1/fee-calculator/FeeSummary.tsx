@@ -1,13 +1,15 @@
 
 import { Card } from "@/components/ui/card";
 
+interface FeeDetails {
+  baseFee: number;
+  excessClaimFee: number;
+  excessSheetFee: number;
+  totalFee: number;
+}
+
 interface FeeSummaryProps {
-  fees: {
-    baseFee: number;
-    excessClaimFee: number;
-    excessSheetFee: number;
-    totalFee: number;
-  };
+  fees: FeeDetails;
 }
 
 export function FeeSummary({ fees }: FeeSummaryProps) {
