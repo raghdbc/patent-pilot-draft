@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import {
   BookOpen,
   Users,
   UserCog,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,8 +85,8 @@ export function Sidebar() {
                 : "text-slate-700 hover:bg-secondary hover:text-navy-800"
             )}
           >
-            <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "mr-2")} />
-            {!collapsed && <span>{item.title}</span>}
+            {item.icon}
+            {!collapsed && <span className="ml-2">{item.title}</span>}
           </Link>
         ))}
       </div>
