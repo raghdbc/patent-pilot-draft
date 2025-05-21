@@ -170,12 +170,12 @@ export const calculateExcessSheetFee = (
   let ratePerSheet: number;
   
   if (mode === 'online') {
-    if (category === 'natural_person') ratePerSheet = 160;
-    else if (category === 'small_entity' || category === 'startup') ratePerSheet = 400;
+    if (category === 'natural_person' || category === 'woman') ratePerSheet = 160;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerSheet = 400;
     else ratePerSheet = 800;
   } else { // offline
-    if (category === 'natural_person') ratePerSheet = 320;
-    else if (category === 'small_entity' || category === 'startup') ratePerSheet = 800;
+    if (category === 'natural_person' || category === 'woman') ratePerSheet = 320;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerSheet = 800;
     else ratePerSheet = 1600;
   }
   
@@ -193,12 +193,12 @@ export const calculateExcessClaimFee = (
   let ratePerClaim: number;
   
   if (mode === 'online') {
-    if (category === 'natural_person') ratePerClaim = 320;
-    else if (category === 'small_entity' || category === 'startup') ratePerClaim = 800;
+    if (category === 'natural_person' || category === 'woman') ratePerClaim = 320;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerClaim = 800;
     else ratePerClaim = 1600;
   } else { // offline
-    if (category === 'natural_person') ratePerClaim = 640;
-    else if (category === 'small_entity' || category === 'startup') ratePerClaim = 1600;
+    if (category === 'natural_person' || category === 'woman') ratePerClaim = 640;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerClaim = 1600;
     else ratePerClaim = 3200;
   }
   

@@ -6,5 +6,6 @@ export interface SectionContent {
   description: string;
   claims: string;
   drawings: string;
+  summary: string;
   [key: string]: string;
 }
