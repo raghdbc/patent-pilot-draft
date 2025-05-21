@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { InfoCircle, AlertTriangle } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
 import { FormTooltip } from "../FormTooltip";
 import { 
   ApplicantCategory, 
@@ -22,7 +22,6 @@ import {
 } from "@/models/patentApplication";
 import { 
   calculateEarlyPublicationFee,
-  isExpeditedExamAllowed
 } from "@/utils/patentFormHelpers";
 
 interface PublicationExaminationSectionProps {
@@ -75,6 +74,35 @@ export function PublicationExaminationSection({
       }
     }
   }, [applicants, preConfiguredApplicant, applicantMode, feeMode, form]);
+  
+  // Helper function to check if expedited examination is allowed
+  const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; reason?: string } => {
+    // Check if at least one applicant is female
+    const hasWomanApplicant = applicants.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
+    
+    if (hasWomanApplicant) {
+      return { allowed: true, reason: 'At least one woman applicant' };
+    }
+    
+    // Check if all applicants are in eligible categories
+    const eligibleCategories: ApplicantCategory[] = [
+      'startup', 
+      'small_entity', 
+      'govt_entity', 
+      'education_institute', 
+      'woman'
+    ];
+    
+    const allApplicantsEligible = applicants.additionalApplicants?.every(
+      (app: any) => eligibleCategories.includes(app.category)
+    ) ?? false;
+    
+    if (allApplicantsEligible) {
+      return { allowed: true, reason: 'All eligible' };
+    }
+    
+    return { allowed: false };
+  };
   
   // Only show these sections for Complete applications
   if (applicationType !== 'complete') {
@@ -130,7 +158,7 @@ export function PublicationExaminationSection({
             
             {form.watch('publicationPreference') === 'early' && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2">
-                <InfoCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-blue-700">
                     Early publication fee will be applied: <strong>₹{earlyPublicationFee}</strong> ({feeMode})
@@ -207,7 +235,7 @@ export function PublicationExaminationSection({
             
             {expeditedExamAllowed.allowed && expeditedExamAllowed.reason && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2">
-                <InfoCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <Info className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-green-700">
                     Expedited examination is available: <strong>{expeditedExamAllowed.reason}</strong>

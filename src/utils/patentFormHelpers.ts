@@ -168,6 +168,35 @@ export const calculateExcessClaimFee = (
   return (excessClaims * ratePerClaim).toString();
 };
 
+// Check if expedited examination is allowed
+export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; reason?: string } => {
+  // Check if at least one applicant is female
+  const hasWomanApplicant = applicants.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
+  
+  if (hasWomanApplicant) {
+    return { allowed: true, reason: 'At least one woman applicant' };
+  }
+  
+  // Check if all applicants are in eligible categories
+  const eligibleCategories: ApplicantCategory[] = [
+    'startup', 
+    'small_entity', 
+    'govt_entity', 
+    'education_institute', 
+    'woman'
+  ];
+  
+  const allApplicantsEligible = applicants.additionalApplicants?.every(
+    (app: any) => eligibleCategories.includes(app.category)
+  ) ?? false;
+  
+  if (allApplicantsEligible) {
+    return { allowed: true, reason: 'All eligible' };
+  }
+  
+  return { allowed: false };
+};
+
 // Calculate the total fee for a patent application
 export const calculateTotalFee = (
   category: ApplicantCategory,
