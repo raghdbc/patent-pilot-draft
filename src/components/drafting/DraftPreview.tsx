@@ -1,115 +1,73 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader } from "lucide-react";
-import { SectionContent } from "./DraftingContext";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { SectionContent } from '@/models/draftTypes';
 
 interface DraftPreviewProps {
   sections: SectionContent;
-  onSave: () => void;
-  isSaving: boolean;
 }
 
-export function DraftPreview({ sections, onSave, isSaving }: DraftPreviewProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+export function DraftPreview({ sections }: DraftPreviewProps) {
+  const isEmpty = Object.values(sections).every(section => !section || section.trim() === '');
   
-  // Generate formatted draft from all sections
-  const generateFormattedDraft = () => {
-    const parts = [];
-    
-    parts.push("PATENT SPECIFICATION\n\n");
-    
-    if (sections.title) {
-      parts.push(`TITLE: ${sections.title.toUpperCase()}\n\n`);
-    }
-    
-    if (sections.background) {
-      parts.push(sections.background + "\n\n");
-    }
-    
-    if (sections.summary) {
-      parts.push(sections.summary + "\n\n");
-    }
-    
-    if (sections.drawings) {
-      parts.push(sections.drawings + "\n\n");
-    }
-    
-    if (sections.description) {
-      parts.push(sections.description + "\n\n");
-    }
-    
-    if (sections.claims) {
-      parts.push(sections.claims + "\n\n");
-    }
-    
-    if (sections.abstract) {
-      parts.push(sections.abstract);
-    }
-    
-    return parts.join("");
-  };
-  
-  const sampleDraft = generateFormattedDraft();
-  
-  const handleDownload = () => {
-    setIsDownloading(true);
-    
-    // Simulate download preparation
-    setTimeout(() => {
-      // In a real implementation, this would create a PDF file
-      // For this demo, we'll simulate the download
-      setIsDownloading(false);
-      alert("Download complete! In a real implementation, this would save your patent draft as a PDF file.");
-    }, 2000);
-  };
-  
-  const handleGenerateComplete = () => {
-    setIsGenerating(true);
-    
-    // Simulate generating the complete document
-    setTimeout(() => {
-      setIsGenerating(false);
-      alert("Complete patent draft has been generated!");
-    }, 3000);
-  };
+  if (isEmpty) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground text-center p-8">
+          Start filling in the sections to preview your patent document here
+        </p>
+      </div>
+    );
+  }
   
   return (
-    <div className="space-y-6">
-      <Alert>
-        <AlertTitle>Draft Preview</AlertTitle>
-        <AlertDescription>
-          This is a preview of your complete patent draft. You can review each section, regenerate content, and download the final document.
-        </AlertDescription>
-      </Alert>
-      
-      <div className="bg-white border rounded-lg p-6 max-h-[600px] overflow-y-auto">
-        <pre className="whitespace-pre-wrap font-serif text-sm">
-          {sampleDraft}
-        </pre>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-        <Button 
-          variant="outline" 
-          className="flex-1"
-          onClick={handleGenerateComplete}
-          disabled={isGenerating || isDownloading}
-        >
-          {isGenerating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-          Regenerate Complete Draft
-        </Button>
-        <Button 
-          className="flex-1"
-          onClick={handleDownload}
-          disabled={isDownloading || isGenerating}
-        >
-          {isDownloading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-          Download Patent Draft
-        </Button>
-      </div>
-    </div>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="py-4 px-6">
+        <CardTitle className="text-xl font-bold">{sections.title || "Untitled Patent"}</CardTitle>
+      </CardHeader>
+      <ScrollArea className="flex-1">
+        <CardContent className="p-6">
+          {sections.abstract && (
+            <div className="mb-8">
+              <h2 className="text-lg font-medium mb-2">ABSTRACT</h2>
+              <p className="whitespace-pre-wrap">{sections.abstract}</p>
+            </div>
+          )}
+          
+          {sections.background && (
+            <div className="mb-8">
+              <h2 className="text-lg font-medium mb-2">BACKGROUND</h2>
+              <p className="whitespace-pre-wrap">{sections.background}</p>
+              <Separator className="my-6" />
+            </div>
+          )}
+          
+          {sections.description && (
+            <div className="mb-8">
+              <h2 className="text-lg font-medium mb-2">DETAILED DESCRIPTION</h2>
+              <p className="whitespace-pre-wrap">{sections.description}</p>
+              <Separator className="my-6" />
+            </div>
+          )}
+          
+          {sections.claims && (
+            <div className="mb-8">
+              <h2 className="text-lg font-medium mb-2">CLAIMS</h2>
+              <p className="whitespace-pre-wrap">{sections.claims}</p>
+              <Separator className="my-6" />
+            </div>
+          )}
+          
+          {sections.drawings && (
+            <div className="mb-8">
+              <h2 className="text-lg font-medium mb-2">DRAWINGS</h2>
+              <p className="whitespace-pre-wrap">{sections.drawings}</p>
+            </div>
+          )}
+        </CardContent>
+      </ScrollArea>
+    </Card>
   );
 }

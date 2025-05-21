@@ -1,64 +1,82 @@
 
-import { useDrafting } from "./DraftingContext";
+import { SectionContent } from "@/models/draftTypes";
+import { AbstractSection } from "./sections/AbstractSection";
 import { BackgroundSection } from "./sections/BackgroundSection";
-import { SummarySection } from "./sections/SummarySection";
-import { DrawingsSection } from "./sections/DrawingsSection";
 import { DetailedDescriptionSection } from "./sections/DetailedDescriptionSection";
 import { ClaimsSection } from "./sections/ClaimsSection";
-import { AbstractSection } from "./sections/AbstractSection";
+import { DrawingsSection } from "./sections/DrawingsSection";
+import { SummarySection } from "./sections/SummarySection";
 
-// Type definitions to fix the props error
-export interface DraftSectionProps {
-  content: string;
-  onChange: (content: string) => void;
+interface DraftingSectionContentProps {
+  currentSection: string;
+  sections: SectionContent;
+  onSectionChange: (section: string, content: string) => void;
 }
 
-export function DraftingSectionContent() {
-  const { currentSection, sectionContent, updateSectionContent } = useDrafting();
-  
-  // Handler for section content updates
-  const handleContentChange = (content: string) => {
-    updateSectionContent(currentSection, content);
+export function DraftingSectionContent({
+  currentSection,
+  sections,
+  onSectionChange,
+}: DraftingSectionContentProps) {
+  const handleChange = (content: string) => {
+    onSectionChange(currentSection.toLowerCase(), content);
   };
 
-  return (
-    <div className="animate-slide-in">
-      {currentSection === "background" && (
-        <BackgroundSection
-          content={sectionContent.background}
-          onChange={handleContentChange}
-        />
-      )}
-      {currentSection === "summary" && (
-        <SummarySection
-          content={sectionContent.summary}
-          onChange={handleContentChange}
-        />
-      )}
-      {currentSection === "drawings" && (
-        <DrawingsSection
-          content={sectionContent.drawings}
-          onChange={handleContentChange}
-        />
-      )}
-      {currentSection === "description" && (
-        <DetailedDescriptionSection
-          content={sectionContent.description}
-          onChange={handleContentChange}
-        />
-      )}
-      {currentSection === "claims" && (
-        <ClaimsSection
-          content={sectionContent.claims}
-          onChange={handleContentChange}
-        />
-      )}
-      {currentSection === "abstract" && (
+  switch (currentSection) {
+    case "Title":
+      return (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Title</h3>
+          <p className="text-sm text-muted-foreground">
+            Provide a clear, concise title for your invention (5-15 words)
+          </p>
+          <input
+            type="text"
+            value={sections.title || ""}
+            onChange={(e) => handleChange(e.target.value)}
+            className="w-full p-2 border rounded-md"
+            placeholder="Enter a descriptive title for your invention..."
+          />
+        </div>
+      );
+    case "Abstract":
+      return (
         <AbstractSection
-          content={sectionContent.abstract}
-          onChange={handleContentChange}
+          content={sections.abstract || ""}
+          onChange={handleChange}
         />
-      )}
-    </div>
-  );
+      );
+    case "Background":
+      return (
+        <BackgroundSection
+          content={sections.background || ""}
+          onChange={handleChange}
+        />
+      );
+    case "Description":
+      return (
+        <DetailedDescriptionSection
+          content={sections.description || ""}
+          onChange={handleChange}
+        />
+      );
+    case "Claims":
+      return (
+        <ClaimsSection
+          content={sections.claims || ""}
+          onChange={handleChange}
+        />
+      );
+    case "Drawings":
+      return (
+        <DrawingsSection
+          content={sections.drawings || ""}
+          onChange={handleChange}
+        />
+      );
+    case "Summary":
+      return <SummarySection sections={sections} />;
+    default:
+      return <div>Select a section to begin</div>;
+  }
 }

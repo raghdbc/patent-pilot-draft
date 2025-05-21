@@ -1,8 +1,5 @@
-
 import { 
   ApplicantCategory, 
-  calculateExcessClaimFee, 
-  calculateExcessSheetFee 
 } from "@/models/patentApplication";
 
 export interface FeeSummary {
@@ -120,6 +117,54 @@ export const calculateExpeditedExaminationFee = (
         return 66000;
     }
   }
+};
+
+// Calculate excess sheet fee - now exported correctly
+export const calculateExcessSheetFee = (
+  totalSheets: number, 
+  category: ApplicantCategory, 
+  mode: 'online' | 'offline'
+): string => {
+  if (totalSheets <= 30) return '0';
+  
+  const excessSheets = totalSheets - 30;
+  let ratePerSheet: number;
+  
+  if (mode === 'online') {
+    if (category === 'natural_person' || category === 'woman') ratePerSheet = 160;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerSheet = 400;
+    else ratePerSheet = 800;
+  } else { // offline
+    if (category === 'natural_person' || category === 'woman') ratePerSheet = 320;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerSheet = 800;
+    else ratePerSheet = 1600;
+  }
+  
+  return (excessSheets * ratePerSheet).toString();
+};
+
+// Calculate excess claim fee - now exported correctly
+export const calculateExcessClaimFee = (
+  totalClaims: number, 
+  category: ApplicantCategory, 
+  mode: 'online' | 'offline'
+): string => {
+  if (totalClaims <= 10) return '0';
+  
+  const excessClaims = totalClaims - 10;
+  let ratePerClaim: number;
+  
+  if (mode === 'online') {
+    if (category === 'natural_person' || category === 'woman') ratePerClaim = 320;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerClaim = 800;
+    else ratePerClaim = 1600;
+  } else { // offline
+    if (category === 'natural_person' || category === 'woman') ratePerClaim = 640;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) ratePerClaim = 1600;
+    else ratePerClaim = 3200;
+  }
+  
+  return (excessClaims * ratePerClaim).toString();
 };
 
 // Calculate the total fee for a patent application

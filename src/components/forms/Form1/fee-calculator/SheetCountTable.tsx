@@ -2,14 +2,16 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+interface SheetCount {
+  description: number;
+  abstract: number;
+  claims: number;
+  drawings: number;
+}
+
 interface SheetCountTableProps {
-  sheetCount: {
-    description: number;
-    abstract: number;
-    claims: number;
-    drawings: number;
-  };
-  handleSheetCountChange: (type: keyof typeof sheetCount, value: string) => void;
+  sheetCount: SheetCount;
+  handleSheetCountChange: (type: keyof SheetCount, value: string) => void;
   totalSheetCount: number;
   fees: any;
   feeCategory: string;
