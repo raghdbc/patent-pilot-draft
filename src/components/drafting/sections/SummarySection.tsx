@@ -22,7 +22,14 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { DraftSectionProps } from "../DraftingSectionContent";
+import { SectionContent } from "@/models/draftTypes";
+
+// Define the correct props interface for this component
+interface SummarySectionProps {
+  sections?: SectionContent;
+  content?: string;
+  onChange?: (content: string) => void;
+}
 
 const summaryFormSchema = z.object({
   inventionPurpose: z.string().min(20, {
@@ -38,7 +45,7 @@ const summaryFormSchema = z.object({
 
 type SummaryFormValues = z.infer<typeof summaryFormSchema>;
 
-export function SummarySection({ content, onChange }: DraftSectionProps) {
+export function SummarySection({ content = "", onChange = () => {}, sections }: SummarySectionProps) {
   const [generatingDraft, setGeneratingDraft] = useState(false);
   const [draftText, setDraftText] = useState(content || "");
   const [showGenerated, setShowGenerated] = useState(!!content);
