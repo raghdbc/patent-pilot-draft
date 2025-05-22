@@ -58,6 +58,21 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
   const wantToPreConfigure = form.watch('wantToPreConfigure');
   const residency = form.watch('preConfiguredApplicant.residency');
   
+  const handleWantToPreConfigureChange = (value: string) => {
+    form.setValue('wantToPreConfigure', value as YesNoOption);
+    
+    // If user chooses "no", clear any pre-configured applicant data
+    if (value === 'no') {
+      form.setValue('preConfiguredApplicant', undefined);
+      
+      // If applicant mode was fixed or fixed++, reset it to no_applicant_configured
+      const currentMode = form.getValues('applicantMode');
+      if (currentMode === 'fixed' || currentMode === 'fixed_plus') {
+        form.setValue('applicantMode', 'no_applicant_configured');
+      }
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Pre-Configure Applicant</h3>
@@ -76,7 +91,7 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
             </FormLabel>
             <FormControl>
               <RadioGroup
-                onValueChange={field.onChange}
+                onValueChange={(value) => handleWantToPreConfigureChange(value)}
                 defaultValue={field.value}
                 className="flex flex-col space-y-1"
               >

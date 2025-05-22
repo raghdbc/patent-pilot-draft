@@ -173,8 +173,8 @@ export const calculateExcessClaimFee = (
 export const isExpeditedExamAllowed = (applicants: ApplicantDetails): { allowed: boolean; reason?: string } => {
   // Check if at least one applicant is female
   const hasWomanApplicant = Boolean(
-    applicants.additionalApplicants?.some(app => app.category === 'woman') ||
-    (applicants.fixed?.category === 'woman')
+    (applicants.additionalApplicants && applicants.additionalApplicants.some(app => app.category === 'woman')) ||
+    (applicants.fixed && applicants.fixed.category === 'woman')
   );
   
   if (hasWomanApplicant) {
@@ -196,12 +196,14 @@ export const isExpeditedExamAllowed = (applicants: ApplicantDetails): { allowed:
   }
   
   // Check additional applicants
-  const allAdditionalApplicantsEligible = applicants.additionalApplicants?.every(
-    app => eligibleCategories.includes(app.category)
-  ) ?? true;
+  const allAdditionalApplicantsEligible = !applicants.additionalApplicants || 
+    (applicants.additionalApplicants.length > 0 && 
+     applicants.additionalApplicants.every(app => eligibleCategories.includes(app.category)));
   
-  if (allAdditionalApplicantsEligible) {
-    return { allowed: true, reason: 'All applicants are eligible entities' };
+  if (applicants.fixed || (applicants.additionalApplicants && applicants.additionalApplicants.length > 0)) {
+    if (allAdditionalApplicantsEligible) {
+      return { allowed: true, reason: 'All applicants are eligible entities' };
+    }
   }
   
   return { allowed: false };

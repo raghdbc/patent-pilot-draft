@@ -74,6 +74,12 @@ const otherDetailsSchema = z.object({
   numberOfDrawings: z.coerce.number().min(0),
 });
 
+// Fee object schema
+const feeSchema = z.object({
+  online: z.string().optional(),
+  offline: z.string().optional(),
+});
+
 // Main patent application form schema
 export const patentFormSchema = z.object({
   // 1. Application Type
@@ -104,22 +110,12 @@ export const patentFormSchema = z.object({
   others: otherDetailsSchema,
   
   // Fee calculation fields
-  excessSheetFee: z.object({
-    online: z.string().optional(),
-    offline: z.string().optional(),
-  }).optional(),
-  
-  excessClaimFee: z.object({
-    online: z.string().optional(),
-    offline: z.string().optional(),
-  }).optional(),
+  excessSheetFee: feeSchema.optional(),
+  excessClaimFee: feeSchema.optional(),
   
   // 7. Publication Preference
   publicationPreference: z.enum(["ordinary", "early"]).optional(),
-  earlyPublicationFee: z.object({
-    online: z.string().optional(),
-    offline: z.string().optional(),
-  }).optional(),
+  earlyPublicationFee: feeSchema.optional(),
   
   // 8. Examination Preference
   examinationPreference: z.enum(["ordinary", "expedited"]).optional(),
@@ -186,6 +182,35 @@ export const patentFormSchema = z.object({
     message: "Examination preference is required for complete applications",
     path: ["examinationPreference"],
   }
+)
+.refine(
+  (data) => {
+    // If wantToPreConfigure is yes, preConfiguredApplicant must be defined
+    if (data.wantToPreConfigure === "yes") {
+      return data.preConfiguredApplicant !== undefined;
+    }
+    return true;
+  },
+  {
+    message: "Please complete the pre-configured applicant details",
+    path: ["preConfiguredApplicant"],
+  }
+)
+.refine(
+  (data) => {
+    // If applicantMode is fixed or fixed_plus, preConfiguredApplicant must be defined
+    if (
+      (data.applicantMode === "fixed" || data.applicantMode === "fixed_plus") && 
+      data.wantToPreConfigure === "yes"
+    ) {
+      return data.preConfiguredApplicant !== undefined;
+    }
+    return true;
+  },
+  {
+    message: "Pre-configured applicant is required for Fixed or Fixed++ modes",
+    path: ["preConfiguredApplicant"],
+  }
 );
 
 export type PatentFormValues = z.infer<typeof patentFormSchema>;
@@ -203,6 +228,7 @@ export const emptyPatentFormValues: Partial<PatentFormValues> = {
       address: ""
     }
   ],
+  wantToPreConfigure: "no",
   applicantMode: "no_applicant_configured",
   applicants: {
     fromInventors: [],

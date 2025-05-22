@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
 import {
   FormField,
@@ -24,9 +25,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ApplicantCategory, ApplicantMode, YesNoOption } from "@/models/patentApplication";
 import { FormTooltip } from "../FormTooltip";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, User, Users } from "lucide-react";
 
-// Simplified country and state lists (same as in InventorDetailsSection)
+// Simplified country and state lists
 const COUNTRIES = [
   "Indian",
   "American",
@@ -68,6 +69,20 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
     name: "applicants.additionalApplicants"
   });
   
+  useEffect(() => {
+    // If applicantMode is 'fixed', set the fixed applicant to the preConfiguredApplicant
+    if (applicantMode === 'fixed' && preConfiguredApplicant) {
+      form.setValue('applicants.fixed', preConfiguredApplicant);
+    }
+    // If applicantMode is 'fixed_plus', also set the fixed applicant
+    if (applicantMode === 'fixed_plus' && preConfiguredApplicant) {
+      form.setValue('applicants.fixed', preConfiguredApplicant);
+    }
+  }, [applicantMode, preConfiguredApplicant, form]);
+  
+  // Check if fixed modes should be available
+  const fixedModesAvailable = wantToPreConfigure === 'yes' && preConfiguredApplicant;
+  
   const handleAddApplicant = () => {
     appendApplicant({
       name: "",
@@ -103,24 +118,31 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                   <Label htmlFor="no-configured">No Applicant Configured</Label>
                 </div>
                 
-                {wantToPreConfigure === 'yes' && preConfiguredApplicant && (
+                {fixedModesAvailable && (
                   <>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fixed" id="fixed" />
-                      <Label htmlFor="fixed">Fixed</Label>
+                      <RadioGroupItem value="fixed" id="fixed" disabled={!fixedModesAvailable} />
+                      <Label htmlFor="fixed" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fixed_plus" id="fixed-plus" />
-                      <Label htmlFor="fixed-plus">Fixed++</Label>
+                      <RadioGroupItem value="fixed_plus" id="fixed-plus" disabled={!fixedModesAvailable} />
+                      <Label htmlFor="fixed-plus" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed++</Label>
                     </div>
                   </>
                 )}
               </RadioGroup>
             </FormControl>
             <FormDescription>
-              {wantToPreConfigure === 'yes' 
-                ? 'Choose how to use your pre-configured applicant'
-                : 'Select inventors as applicants or add new applicants'}
+              {!fixedModesAvailable && (
+                <span className="text-amber-600">
+                  To use Fixed or Fixed++ modes, you need to pre-configure an applicant in the previous step
+                </span>
+              )}
+              {fixedModesAvailable && (
+                <span>
+                  Choose how to use your pre-configured applicant
+                </span>
+              )}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -132,7 +154,10 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Select Inventors as Applicants</CardTitle>
+              <CardTitle className="text-base flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Select Inventors as Applicants
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {inventors.length > 0 ? (
@@ -375,37 +400,40 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
       
       {/* Mode: Fixed Applicant */}
       {applicantMode === 'fixed' && preConfiguredApplicant && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Fixed Applicant</CardTitle>
+        <Card className="border-green-200">
+          <CardHeader className="bg-green-50 border-b border-green-200">
+            <CardTitle className="text-base flex items-center text-green-800">
+              <User className="h-5 w-5 mr-2" />
+              Pre-configured Applicant (Read-only)
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="space-y-3">
               <div>
                 <span className="text-sm font-medium">Name:</span>
-                <p>{preConfiguredApplicant.name}</p>
+                <p className="text-muted-foreground">{preConfiguredApplicant.name}</p>
               </div>
               <div>
                 <span className="text-sm font-medium">Category:</span>
-                <p>{preConfiguredApplicant.category}</p>
+                <p className="text-muted-foreground">{preConfiguredApplicant.category}</p>
               </div>
               <div>
                 <span className="text-sm font-medium">Nationality:</span>
-                <p>{preConfiguredApplicant.nationality}</p>
+                <p className="text-muted-foreground">{preConfiguredApplicant.nationality}</p>
               </div>
               <div>
                 <span className="text-sm font-medium">Residency:</span>
-                <p>{preConfiguredApplicant.residency}</p>
+                <p className="text-muted-foreground">{preConfiguredApplicant.residency}</p>
               </div>
               {preConfiguredApplicant.state && (
                 <div>
                   <span className="text-sm font-medium">State:</span>
-                  <p>{preConfiguredApplicant.state}</p>
+                  <p className="text-muted-foreground">{preConfiguredApplicant.state}</p>
                 </div>
               )}
               <div>
                 <span className="text-sm font-medium">Address:</span>
-                <p className="whitespace-pre-line">{preConfiguredApplicant.address}</p>
+                <p className="text-muted-foreground whitespace-pre-line">{preConfiguredApplicant.address}</p>
               </div>
             </div>
           </CardContent>
@@ -416,37 +444,40 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
       {applicantMode === 'fixed_plus' && preConfiguredApplicant && (
         <div className="space-y-4">
           {/* Show preconfigured applicant */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Fixed Applicant</CardTitle>
+          <Card className="border-green-200">
+            <CardHeader className="bg-green-50 border-b border-green-200">
+              <CardTitle className="text-base flex items-center text-green-800">
+                <User className="h-5 w-5 mr-2" />
+                Pre-configured Applicant (Read-only)
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="space-y-3">
                 <div>
                   <span className="text-sm font-medium">Name:</span>
-                  <p>{preConfiguredApplicant.name}</p>
+                  <p className="text-muted-foreground">{preConfiguredApplicant.name}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Category:</span>
-                  <p>{preConfiguredApplicant.category}</p>
+                  <p className="text-muted-foreground">{preConfiguredApplicant.category}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Nationality:</span>
-                  <p>{preConfiguredApplicant.nationality}</p>
+                  <p className="text-muted-foreground">{preConfiguredApplicant.nationality}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Residency:</span>
-                  <p>{preConfiguredApplicant.residency}</p>
+                  <p className="text-muted-foreground">{preConfiguredApplicant.residency}</p>
                 </div>
                 {preConfiguredApplicant.state && (
                   <div>
                     <span className="text-sm font-medium">State:</span>
-                    <p>{preConfiguredApplicant.state}</p>
+                    <p className="text-muted-foreground">{preConfiguredApplicant.state}</p>
                   </div>
                 )}
                 <div>
                   <span className="text-sm font-medium">Address:</span>
-                  <p className="whitespace-pre-line">{preConfiguredApplicant.address}</p>
+                  <p className="text-muted-foreground whitespace-pre-line">{preConfiguredApplicant.address}</p>
                 </div>
               </div>
             </CardContent>
@@ -455,7 +486,10 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
           {/* Show inventor checkboxes */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Select Inventors as Additional Applicants</CardTitle>
+              <CardTitle className="text-base flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Select Inventors as Additional Applicants
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {inventors.length > 0 ? (
