@@ -11,241 +11,173 @@ import {
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Info, AlertTriangle } from "lucide-react";
+import { Info } from "lucide-react";
 import { FormTooltip } from "../FormTooltip";
-import { 
-  ApplicantCategory, 
-  PublicationPreference,
-  ExaminationPreference 
-} from "@/models/patentApplication";
-import { 
-  calculateEarlyPublicationFee,
-} from "@/utils/patentFormHelpers";
+import { isExpeditedExamAllowed } from "@/utils/patentFormHelpers";
 
 interface PublicationExaminationSectionProps {
   form: UseFormReturn<any>;
-  feeMode?: 'online' | 'offline';
 }
 
-export function PublicationExaminationSection({
-  form,
-  feeMode = 'online'
-}: PublicationExaminationSectionProps) {
+export function PublicationExaminationSection({ form }: PublicationExaminationSectionProps) {
+  const [expeditedInfo, setExpeditedInfo] = useState<{ allowed: boolean; reason?: string }>({ allowed: false });
+  
   const applicationType = form.watch('applicationType');
   const applicants = form.watch('applicants');
-  const preConfiguredApplicant = form.watch('preConfiguredApplicant');
-  const applicantMode = form.watch('applicantMode');
   
-  // Determine fee category based on applicant details
-  const [feeCategory, setFeeCategory] = useState<ApplicantCategory>('natural_person');
-  const [expeditedExamAllowed, setExpeditedExamAllowed] = useState<{allowed: boolean; reason?: string}>({ allowed: false });
-  const [earlyPublicationFee, setEarlyPublicationFee] = useState<string>("0");
-  
+  // Check eligibility for expedited examination whenever applicants change
   useEffect(() => {
-    // Determine primary applicant category for fee calculation
-    let primaryCategory: ApplicantCategory = 'natural_person';
-    
-    if (applicantMode === 'fixed' || applicantMode === 'fixed_plus') {
-      if (preConfiguredApplicant?.category) {
-        primaryCategory = preConfiguredApplicant.category;
-      }
-    } else if (applicants?.additionalApplicants?.length > 0) {
-      // Use first additional applicant's category
-      primaryCategory = applicants.additionalApplicants[0].category;
-    }
-    
-    setFeeCategory(primaryCategory);
-    
-    // Calculate early publication fee
-    const fee = calculateEarlyPublicationFee(primaryCategory, feeMode);
-    setEarlyPublicationFee(fee.toString());
-    
-    // Check if expedited examination is allowed
     if (applicants) {
       const result = isExpeditedExamAllowed(applicants);
-      setExpeditedExamAllowed(result);
-      
-      // Update form value
-      form.setValue('expeditedAllowed', result.allowed);
-      if (result.reason) {
-        form.setValue('expeditedReason', result.reason);
-      }
+      setExpeditedInfo(result);
     }
-  }, [applicants, preConfiguredApplicant, applicantMode, feeMode, form]);
+  }, [applicants]);
   
-  // Helper function to check if expedited examination is allowed
-  const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; reason?: string } => {
-    // Check if at least one applicant is female
-    const hasWomanApplicant = applicants.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
-    
-    if (hasWomanApplicant) {
-      return { allowed: true, reason: 'At least one woman applicant' };
-    }
-    
-    // Check if all applicants are in eligible categories
-    const eligibleCategories: ApplicantCategory[] = [
-      'startup', 
-      'small_entity', 
-      'govt_entity', 
-      'education_institute', 
-      'woman'
-    ];
-    
-    const allApplicantsEligible = applicants.additionalApplicants?.every(
-      (app: any) => eligibleCategories.includes(app.category)
-    ) ?? false;
-    
-    if (allApplicantsEligible) {
-      return { allowed: true, reason: 'All eligible' };
-    }
-    
-    return { allowed: false };
-  };
-  
-  // Only show these sections for Complete applications
   if (applicationType !== 'complete') {
-    return null;
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Publication & Examination Preferences</h3>
+        <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+          <div className="flex items-start gap-2">
+            <Info className="h-5 w-5 text-yellow-500 mt-0.5" />
+            <p className="text-sm">
+              Publication and examination preferences are only applicable for complete applications.
+              Please select 'Complete' as the application type if you want to set these preferences.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   return (
     <div className="space-y-6">
+      <h3 className="text-lg font-medium">Publication & Examination Preferences</h3>
+      
       {/* Publication Preference */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Publication Preference</h3>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <FormField
-              control={form.control}
-              name="publicationPreference"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>
-                    Publication Preference
-                    <FormTooltip content="Choose when your application should be published" />
-                  </FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="ordinary" id="ordinary-pub" />
-                        <Label htmlFor="ordinary-pub">
-                          Ordinary Publication
-                          <Badge variant="secondary" className="ml-2">Free</Badge>
-                        </Label>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Publication Preference</CardTitle>
+          <CardDescription>
+            Select if you want ordinary or early publication of your patent application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FormField
+            control={form.control}
+            name="publicationPreference"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-start space-x-2">
+                      <RadioGroupItem value="ordinary" id="ordinary" />
+                      <div className="grid gap-1">
+                        <Label htmlFor="ordinary" className="font-medium">Ordinary Publication</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Standard publication timeline (no additional fee)
+                        </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="early" id="early-pub" />
-                        <Label htmlFor="early-pub">
-                          Early Publication
-                          <Badge variant="outline" className="ml-2">₹{earlyPublicationFee}</Badge>
-                        </Label>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <RadioGroupItem value="early" id="early" />
+                      <div className="grid gap-1">
+                        <Label htmlFor="early" className="font-medium">Early Publication</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Earlier publication with additional fee based on applicant category
+                        </p>
                       </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    Ordinary publication occurs after 18 months. Early publication expedites this process.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {form.watch('publicationPreference') === 'early' && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-blue-700">
-                    Early publication fee will be applied: <strong>₹{earlyPublicationFee}</strong> ({feeMode})
-                  </p>
-                </div>
-              </div>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          />
+        </CardContent>
+      </Card>
       
       {/* Examination Preference */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Examination Preference</h3>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <FormField
-              control={form.control}
-              name="examinationPreference"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>
-                    Examination Preference
-                    <FormTooltip content="Choose the examination route for your application" />
-                  </FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="ordinary" id="ordinary-exam" />
-                        <Label htmlFor="ordinary-exam">Ordinary Examination</Label>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Examination Preference</CardTitle>
+          <CardDescription>
+            Select if you want ordinary or expedited examination of your patent application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FormField
+            control={form.control}
+            name="examinationPreference"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-start space-x-2">
+                      <RadioGroupItem value="ordinary" id="ordinary-exam" />
+                      <div className="grid gap-1">
+                        <Label htmlFor="ordinary-exam" className="font-medium">Ordinary Examination</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Standard examination timeline (typically 18-36 months)
+                        </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem 
-                          value="expedited" 
-                          id="expedited-exam" 
-                          disabled={!expeditedExamAllowed.allowed}
-                        />
-                        <Label 
-                          htmlFor="expedited-exam" 
-                          className={!expeditedExamAllowed.allowed ? "text-gray-400" : ""}
-                        >
-                          Expedited Examination
-                        </Label>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <RadioGroupItem 
+                        value="expedited" 
+                        id="expedited" 
+                        disabled={!expeditedInfo.allowed}
+                      />
+                      <div className="grid gap-1">
+                        <div className="flex items-center gap-2">
+                          <Label 
+                            htmlFor="expedited" 
+                            className={`font-medium ${!expeditedInfo.allowed ? 'text-muted-foreground' : ''}`}
+                          >
+                            Expedited Examination
+                          </Label>
+                          {expeditedInfo.allowed && expeditedInfo.reason && (
+                            <Badge className="bg-green-500 text-xs">
+                              {expeditedInfo.reason}
+                            </Badge>
+                          )}
+                        </div>
+                        {expeditedInfo.allowed ? (
+                          <p className="text-sm text-muted-foreground">
+                            Faster examination (typically 6-12 months) with additional fee
+                          </p>
+                        ) : (
+                          <p className="text-sm text-red-500">
+                            Expedited examination is only available for Startups, Small Entities, 
+                            Government Entities, Education Institutes, or Women Applicants.
+                          </p>
+                        )}
                       </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    Expedited examination is only available for certain applicant categories.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {!expeditedExamAllowed.allowed && (
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-amber-700">
-                    Expedited examination is not available for your applicant type.
-                  </p>
-                  <p className="text-xs text-amber-600 mt-1">
-                    Only available for: startups, small entities, government entities, 
-                    educational institutes, or if at least one applicant is a woman.
-                  </p>
-                </div>
-              </div>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-            
-            {expeditedExamAllowed.allowed && expeditedExamAllowed.reason && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2">
-                <Info className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-green-700">
-                    Expedited examination is available: <strong>{expeditedExamAllowed.reason}</strong>
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

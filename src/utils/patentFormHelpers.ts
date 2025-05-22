@@ -1,6 +1,7 @@
 
 import { 
   ApplicantCategory, 
+  ApplicantDetails
 } from "@/models/patentApplication";
 
 export interface FeeSummary {
@@ -120,13 +121,13 @@ export const calculateExpeditedExaminationFee = (
   }
 };
 
-// Calculate excess sheet fee - now exported correctly
+// Calculate excess sheet fee
 export const calculateExcessSheetFee = (
   totalSheets: number, 
   category: ApplicantCategory, 
   mode: 'online' | 'offline'
-): string => {
-  if (totalSheets <= 30) return '0';
+): number => {
+  if (totalSheets <= 30) return 0;
   
   const excessSheets = totalSheets - 30;
   let ratePerSheet: number;
@@ -141,16 +142,16 @@ export const calculateExcessSheetFee = (
     else ratePerSheet = 1600;
   }
   
-  return (excessSheets * ratePerSheet).toString();
+  return excessSheets * ratePerSheet;
 };
 
-// Calculate excess claim fee - now exported correctly
+// Calculate excess claim fee
 export const calculateExcessClaimFee = (
   totalClaims: number, 
   category: ApplicantCategory, 
   mode: 'online' | 'offline'
-): string => {
-  if (totalClaims <= 10) return '0';
+): number => {
+  if (totalClaims <= 10) return 0;
   
   const excessClaims = totalClaims - 10;
   let ratePerClaim: number;
@@ -165,13 +166,16 @@ export const calculateExcessClaimFee = (
     else ratePerClaim = 3200;
   }
   
-  return (excessClaims * ratePerClaim).toString();
+  return excessClaims * ratePerClaim;
 };
 
 // Check if expedited examination is allowed
-export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; reason?: string } => {
+export const isExpeditedExamAllowed = (applicants: ApplicantDetails): { allowed: boolean; reason?: string } => {
   // Check if at least one applicant is female
-  const hasWomanApplicant = applicants.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
+  const hasWomanApplicant = Boolean(
+    applicants.additionalApplicants?.some(app => app.category === 'woman') ||
+    (applicants.fixed?.category === 'woman')
+  );
   
   if (hasWomanApplicant) {
     return { allowed: true, reason: 'At least one woman applicant' };
@@ -186,12 +190,18 @@ export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; rea
     'woman'
   ];
   
-  const allApplicantsEligible = applicants.additionalApplicants?.every(
-    (app: any) => eligibleCategories.includes(app.category)
-  ) ?? false;
+  // Check fixed applicant if present
+  if (applicants.fixed && !eligibleCategories.includes(applicants.fixed.category)) {
+    return { allowed: false };
+  }
   
-  if (allApplicantsEligible) {
-    return { allowed: true, reason: 'All eligible' };
+  // Check additional applicants
+  const allAdditionalApplicantsEligible = applicants.additionalApplicants?.every(
+    app => eligibleCategories.includes(app.category)
+  ) ?? true;
+  
+  if (allAdditionalApplicantsEligible) {
+    return { allowed: true, reason: 'All applicants are eligible entities' };
   }
   
   return { allowed: false };
@@ -216,8 +226,8 @@ export const calculateTotalFee = (
     ? calculateExpeditedExaminationFee(category, mode) 
     : 0;
   
-  const excessSheetFee = parseInt(calculateExcessSheetFee(totalSheets, category, mode));
-  const excessClaimFee = parseInt(calculateExcessClaimFee(totalClaims, category, mode));
+  const excessSheetFee = calculateExcessSheetFee(totalSheets, category, mode);
+  const excessClaimFee = calculateExcessClaimFee(totalClaims, category, mode);
   
   const totalFee = basicFee + earlyPublicationFee + expeditedExaminationFee + excessSheetFee + excessClaimFee;
   
@@ -229,4 +239,22 @@ export const calculateTotalFee = (
     excessClaimFee,
     totalFee
   };
+};
+
+// Format currency for display
+export const formatCurrency = (amount: number): string => {
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
+// Calculate total sheet count
+export const calculateTotalSheets = (sheetCounts: {
+  patentDocumentSheets: number;
+  abstractSheets: number;
+  claimsSheets: number;
+  drawingSheets: number;
+}): number => {
+  return sheetCounts.patentDocumentSheets + 
+         sheetCounts.abstractSheets + 
+         sheetCounts.claimsSheets + 
+         sheetCounts.drawingSheets;
 };

@@ -133,9 +133,6 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                     <FormControl>
                       <Input placeholder="10-digit mobile number" {...field} />
                     </FormControl>
-                    <FormDescription>
-                      OTP will be sent to this number for verification
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -148,21 +145,7 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                   <FormItem>
                     <FormLabel>Telephone (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Landline number with STD code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="addressForService.fax"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fax (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Fax number if available" {...field} />
+                      <Input placeholder="Landline number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -178,9 +161,23 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                     <FormControl>
                       <Input 
                         type="email" 
-                        placeholder="contact@example.com" 
+                        placeholder="service@example.com" 
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="addressForService.fax"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fax (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Fax number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,7 +192,7 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                     <FormLabel>Postal Address</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Full postal address with PIN code" 
+                        placeholder="Complete postal address for service" 
                         className="min-h-20" 
                         {...field} 
                       />

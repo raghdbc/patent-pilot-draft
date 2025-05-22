@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
   FormField,
@@ -9,11 +8,11 @@ import {
   FormDescription,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Select,
   SelectContent,
@@ -24,7 +23,7 @@ import {
 import { ApplicantCategory, YesNoOption } from "@/models/patentApplication";
 import { FormTooltip } from "../FormTooltip";
 
-// Simplified country list
+// Simplified country and state lists
 const COUNTRIES = [
   "Indian",
   "American",
@@ -38,7 +37,6 @@ const COUNTRIES = [
   "Other"
 ];
 
-// Simplified Indian states list
 const INDIAN_STATES = [
   "Andhra Pradesh",
   "Delhi",
@@ -58,10 +56,14 @@ interface PreConfiguredApplicantSectionProps {
 
 export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSectionProps) {
   const wantToPreConfigure = form.watch('wantToPreConfigure');
+  const residency = form.watch('preConfiguredApplicant.residency');
   
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Pre-Configured Applicant</h3>
+      <h3 className="text-lg font-medium">Pre-Configure Applicant</h3>
+      <p className="text-muted-foreground">
+        Optionally pre-configure an applicant that can be used throughout the application
+      </p>
       
       <FormField
         control={form.control}
@@ -69,8 +71,8 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
         render={({ field }) => (
           <FormItem className="space-y-3">
             <FormLabel>
-              Do you want to pre-configure the applicant?
-              <FormTooltip content="Pre-configure an applicant to use across the entire application" />
+              Do you want to pre-configure an applicant?
+              <FormTooltip content="Pre-configuring an applicant allows you to use it in Fixed or Fixed++ mode later" />
             </FormLabel>
             <FormControl>
               <RadioGroup
@@ -79,12 +81,12 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
                 className="flex flex-col space-y-1"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="pre-yes" />
-                  <Label htmlFor="pre-yes">Yes</Label>
+                  <RadioGroupItem value="yes" id="pre-config-yes" />
+                  <Label htmlFor="pre-config-yes">Yes</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="pre-no" />
-                  <Label htmlFor="pre-no">No</Label>
+                  <RadioGroupItem value="no" id="pre-config-no" />
+                  <Label htmlFor="pre-config-no">No</Label>
                 </div>
               </RadioGroup>
             </FormControl>
@@ -94,113 +96,118 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
       />
       
       {wantToPreConfigure === 'yes' && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="preConfiguredApplicant.name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter applicant's full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="preConfiguredApplicant.category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="text-base">Applicant Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="preConfiguredApplicant.name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Applicant Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
+                        <Input placeholder="Enter applicant's full name" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="natural_person">Human (Natural Person)</SelectItem>
-                        <SelectItem value="startup">Startup</SelectItem>
-                        <SelectItem value="small_entity">Small Entity</SelectItem>
-                        <SelectItem value="large_entity">Large Entity</SelectItem>
-                        <SelectItem value="education_institute">Educational Institute</SelectItem>
-                        <SelectItem value="govt_entity">Government Entity</SelectItem>
-                        <SelectItem value="woman">Woman</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The category affects fees and eligibility for expedited examination
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="preConfiguredApplicant.category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="natural_person">Human (Natural Person)</SelectItem>
+                          <SelectItem value="startup">Startup</SelectItem>
+                          <SelectItem value="small_entity">Small Entity</SelectItem>
+                          <SelectItem value="large_entity">Large Entity</SelectItem>
+                          <SelectItem value="education_institute">Educational Institute</SelectItem>
+                          <SelectItem value="govt_entity">Government Entity</SelectItem>
+                          <SelectItem value="woman">Woman</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The category affects fees and eligibility for expedited examination
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="preConfiguredApplicant.nationality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nationality</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select nationality" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COUNTRIES.map(country => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="preConfiguredApplicant.residency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country of Residence</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COUNTRIES.map(country => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
-              <FormField
-                control={form.control}
-                name="preConfiguredApplicant.nationality"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nationality</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select nationality" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map(country => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="preConfiguredApplicant.residency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country of Residence</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {COUNTRIES.map(country => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {form.watch('preConfiguredApplicant.residency') === "Indian" && (
+              {residency === "Indian" && (
                 <FormField
                   control={form.control}
                   name="preConfiguredApplicant.state"
@@ -234,7 +241,7 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
                 control={form.control}
                 name="preConfiguredApplicant.address"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
+                  <FormItem>
                     <FormLabel>Address</FormLabel>
                     <FormControl>
                       <Textarea 
