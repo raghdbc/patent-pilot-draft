@@ -241,6 +241,37 @@ export const calculateTotalFee = (
   };
 };
 
+// Create formatted fee output object for JSON
+export const createFeeOutputJSON = (
+  category: ApplicantCategory,
+  totalSheets: number,
+  totalClaims: number
+) => {
+  // Calculate excess sheet fee
+  const excessSheetFee = {
+    online: formatCurrency(calculateExcessSheetFee(totalSheets, category, 'online')),
+    offline: formatCurrency(calculateExcessSheetFee(totalSheets, category, 'offline'))
+  };
+  
+  // Calculate excess claim fee
+  const excessClaimFee = {
+    online: formatCurrency(calculateExcessClaimFee(totalClaims, category, 'online')),
+    offline: formatCurrency(calculateExcessClaimFee(totalClaims, category, 'offline'))
+  };
+  
+  // Calculate early publication fee
+  const earlyPublicationFee = {
+    online: formatCurrency(calculateEarlyPublicationFee(category, 'online')),
+    offline: formatCurrency(calculateEarlyPublicationFee(category, 'offline'))
+  };
+  
+  return {
+    excessSheetFee,
+    excessClaimFee,
+    earlyPublicationFee
+  };
+};
+
 // Format currency for display
 export const formatCurrency = (amount: number): string => {
   return `₹${amount.toLocaleString('en-IN')}`;
@@ -253,8 +284,8 @@ export const calculateTotalSheets = (sheetCounts: {
   claimsSheets: number;
   drawingSheets: number;
 }): number => {
-  return sheetCounts.patentDocumentSheets + 
-         sheetCounts.abstractSheets + 
-         sheetCounts.claimsSheets + 
-         sheetCounts.drawingSheets;
+  return (sheetCounts.patentDocumentSheets || 0) + 
+         (sheetCounts.abstractSheets || 0) + 
+         (sheetCounts.claimsSheets || 0) + 
+         (sheetCounts.drawingSheets || 0);
 };

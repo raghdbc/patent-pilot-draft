@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
   FormField,
@@ -12,12 +13,50 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormTooltip } from "../FormTooltip";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 
 interface AgentServiceSectionProps {
   form: UseFormReturn<any>;
 }
 
 export function AgentServiceSection({ form }: AgentServiceSectionProps) {
+  const [isVerifyingAgentMobile, setIsVerifyingAgentMobile] = useState(false);
+  const [isVerifyingServiceMobile, setIsVerifyingServiceMobile] = useState(false);
+  
+  const handleVerifyMobile = (fieldName: string) => {
+    const mobileNumber = form.watch(fieldName);
+    if (!mobileNumber || mobileNumber.length < 10) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid 10-digit mobile number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (fieldName.includes("agentDetails")) {
+      setIsVerifyingAgentMobile(true);
+    } else {
+      setIsVerifyingServiceMobile(true);
+    }
+    
+    // Simulate OTP verification
+    setTimeout(() => {
+      toast({
+        title: "OTP Sent",
+        description: `A verification code has been sent to ${mobileNumber}`,
+      });
+      
+      // Reset verification state after simulating process
+      if (fieldName.includes("agentDetails")) {
+        setIsVerifyingAgentMobile(false);
+      } else {
+        setIsVerifyingServiceMobile(false);
+      }
+    }, 1500);
+  };
+  
   return (
     <div className="space-y-6">
       {/* Agent Details */}
@@ -67,9 +106,21 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                       Mobile Number
                       <FormTooltip content="Will be used for OTP verification" />
                     </FormLabel>
-                    <FormControl>
-                      <Input placeholder="10-digit mobile number" {...field} />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input placeholder="10-digit mobile number" {...field} />
+                      </FormControl>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleVerifyMobile('agentDetails.agentMobile')}
+                        disabled={isVerifyingAgentMobile}
+                        className="whitespace-nowrap"
+                      >
+                        {isVerifyingAgentMobile ? "Sending OTP..." : "Verify OTP"}
+                      </Button>
+                    </div>
                     <FormDescription>
                       OTP will be sent to this number for verification
                     </FormDescription>
@@ -130,9 +181,21 @@ export function AgentServiceSection({ form }: AgentServiceSectionProps) {
                       Mobile Number
                       <FormTooltip content="Will be used for OTP verification" />
                     </FormLabel>
-                    <FormControl>
-                      <Input placeholder="10-digit mobile number" {...field} />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input placeholder="10-digit mobile number" {...field} />
+                      </FormControl>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleVerifyMobile('addressForService.mobile')}
+                        disabled={isVerifyingServiceMobile}
+                        className="whitespace-nowrap"
+                      >
+                        {isVerifyingServiceMobile ? "Sending OTP..." : "Verify OTP"}
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

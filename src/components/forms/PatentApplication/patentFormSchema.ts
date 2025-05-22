@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { 
   ApplicationType, 
@@ -102,11 +103,28 @@ export const patentFormSchema = z.object({
   // 6. Others
   others: otherDetailsSchema,
   
+  // Fee calculation fields
+  excessSheetFee: z.object({
+    online: z.string().optional(),
+    offline: z.string().optional(),
+  }).optional(),
+  
+  excessClaimFee: z.object({
+    online: z.string().optional(),
+    offline: z.string().optional(),
+  }).optional(),
+  
   // 7. Publication Preference
   publicationPreference: z.enum(["ordinary", "early"]).optional(),
+  earlyPublicationFee: z.object({
+    online: z.string().optional(),
+    offline: z.string().optional(),
+  }).optional(),
   
   // 8. Examination Preference
   examinationPreference: z.enum(["ordinary", "expedited"]).optional(),
+  expeditedAllowed: z.boolean().optional(),
+  expeditedReason: z.string().optional(),
   
   // 9. Agent Details
   agentDetails: agentDetailsSchema,

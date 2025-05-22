@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
-import { Loader2, Save, FileCheck } from "lucide-react";
+import { Loader2, Save, Download, FileCheck } from "lucide-react";
 import { FormProgress } from "../FormProgress";
 import { patentFormSchema, emptyPatentFormValues } from "./patentFormSchema";
 import { ApplicationTypeSection } from "./ApplicationTypeSection";
@@ -22,6 +22,7 @@ import { ApplicantDetailsSection } from "./ApplicantDetailsSection";
 import { ApplicationDetailsSection } from "./ApplicationDetailsSection";
 import { PublicationExaminationSection } from "./PublicationExaminationSection";
 import { AgentServiceSection } from "./AgentServiceSection";
+import { FormSummary } from "./FormSummary";
 
 const TOTAL_STEPS = 7;
 
@@ -29,6 +30,7 @@ export function MultiStepPatentForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   
   const form = useForm({
@@ -36,6 +38,19 @@ export function MultiStepPatentForm() {
     defaultValues: emptyPatentFormValues,
     mode: "onChange"
   });
+  
+  // Load saved data when component mounts
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('patentFormData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        form.reset(parsedData);
+      }
+    } catch (error) {
+      console.error("Error loading saved data:", error);
+    }
+  }, [form]);
   
   const nextStep = () => {
     if (currentStep < TOTAL_STEPS) {
@@ -58,11 +73,7 @@ export function MultiStepPatentForm() {
       // Get current form values
       const formData = form.getValues();
       
-      // Here you would typically save to an API or localStorage
-      // For this example, we'll simulate a saving process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save to localStorage as an example
+      // Save to localStorage
       localStorage.setItem('patentFormData', JSON.stringify(formData));
       
       toast({
@@ -81,12 +92,48 @@ export function MultiStepPatentForm() {
     }
   };
   
+  const handleDownloadDocument = async () => {
+    try {
+      setIsGenerating(true);
+      
+      // Here you would typically generate and download a document
+      // For this simulation, we'll just wait a bit
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create a JSON blob and trigger download
+      const formData = form.getValues();
+      const blob = new Blob([JSON.stringify(formData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `patent-application-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download complete",
+        description: "Your patent application JSON data has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating document:", error);
+      toast({
+        title: "Download failed",
+        description: "There was a problem generating your document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
       
-      // Simulate form submission
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Save the final form data
+      localStorage.setItem('patentFormData', JSON.stringify(data));
       
       console.log("Form submitted with data:", data);
       
@@ -120,9 +167,19 @@ export function MultiStepPatentForm() {
           title: "Data loaded",
           description: "Your previously saved form data has been loaded.",
         });
+      } else {
+        toast({
+          title: "No saved data",
+          description: "No previously saved data was found.",
+        });
       }
     } catch (error) {
       console.error("Error loading saved data:", error);
+      toast({
+        title: "Error loading data",
+        description: "There was a problem loading your saved data.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -289,7 +346,7 @@ export function MultiStepPatentForm() {
                   ) : (
                     <Button
                       type="submit"
-                      disabled={isSubmitting || !form.formState.isValid}
+                      disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
@@ -309,7 +366,7 @@ export function MultiStepPatentForm() {
             
             <TabsContent value="preview">
               <div className="animate-fade-in space-y-8">
-                <Card>
+                <Card className="bg-green-50 border-green-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl flex items-center text-green-600">
                       <FileCheck className="h-6 w-6 mr-2" />
@@ -319,24 +376,14 @@ export function MultiStepPatentForm() {
                       Your patent application has been prepared successfully
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {/* Application summary would go here */}
-                      <p className="text-center text-muted-foreground">
-                        Your application summary will be displayed here
-                      </p>
-                      
-                      <div className="flex justify-center gap-4 pt-4">
-                        <Button variant="outline" onClick={() => setActiveTab("edit")}>
-                          Edit Application
-                        </Button>
-                        <Button>
-                          Download Application
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
                 </Card>
+                
+                <FormSummary 
+                  form={form} 
+                  onEdit={() => setActiveTab("edit")}
+                  onDownload={handleDownloadDocument}
+                  isGenerating={isGenerating}
+                />
               </div>
             </TabsContent>
           </Tabs>
