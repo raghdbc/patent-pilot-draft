@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Loader, Info, AlertCircle } from "lucide-react";
+import { PlusCircle, MinusCircle, Loader, Info, AlertCircle, Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -67,7 +68,7 @@ interface Applicant {
   residency: string;
   state: string;
   address: string;
-  category: 'Human being' | 'Company' | 'Startup' | 'Small' | 'Large' | 'Education institute';
+  category: 'Human being' | 'Startup' | 'Small' | 'Large' | 'Education institute' | 'Govt Entity' | 'Woman';
 }
 
 interface PatentFormData {
@@ -75,9 +76,14 @@ interface PatentFormData {
   previousProvisionalFiled?: 'Yes' | 'No';
   provisionalApplicationNumber?: string;
   inventors: Inventor[];
-  applicants: Applicant[];
+  wantToPreConfigure?: 'Yes' | 'No';
+  preConfiguredApplicant?: Applicant;
   applicantMode: 'No applicant configured' | 'Fixed applicant' | 'Fixed++';
-  populateFromInventors: boolean;
+  applicants: {
+    fixed?: Applicant;
+    fromInventors?: string[];
+    additionalApplicants?: Applicant[];
+  };
   applicationDetails: {
     title: string;
     sheetCount: number;
@@ -90,6 +96,22 @@ interface PatentFormData {
   publicationFee?: number;
   examinationPreference?: 'Ordinary' | 'Expedited';
   examinationFee?: number;
+  expeditedAllowed?: boolean;
+  expeditedReason?: string;
+  agentDetails?: {
+    inpaNo: string;
+    agentName: string;
+    agentMobile: string;
+    agentEmail: string;
+  };
+  addressForService?: {
+    serviceName: string;
+    postalAddress: string;
+    telephone?: string;
+    mobile: string;
+    fax?: string;
+    email: string;
+  };
 }
 
 // Form schema for validation
@@ -108,23 +130,46 @@ const applicantSchema = z.object({
   residency: z.string().min(1, { message: "Residency is required" }),
   state: z.string().optional(),
   address: z.string().min(5, { message: "Address is required" }),
-  category: z.enum(['Human being', 'Company', 'Startup', 'Small', 'Large', 'Education institute'])
+  category: z.enum(['Human being', 'Startup', 'Small', 'Large', 'Education institute', 'Govt Entity', 'Woman'])
 });
 
 const patentFormSchema = z.object({
   applicationType: z.enum(['Provisional', 'Complete']),
   previousProvisionalFiled: z.enum(['Yes', 'No']).optional(),
   provisionalApplicationNumber: z.string().optional().refine(
-    (val) => {
+    (val, ctx) => {
       // If previousProvisionalFiled is Yes, require application number
+      if (ctx.parent.previousProvisionalFiled === 'Yes' && (!val || val.length === 0)) {
+        return false;
+      }
       return true;
     },
     { message: "Application number is required" }
   ),
   inventors: z.array(inventorSchema).min(1, { message: "At least one inventor is required" }),
-  applicants: z.array(applicantSchema).min(1, { message: "At least one applicant is required" }),
+  wantToPreConfigure: z.enum(['Yes', 'No']).optional(),
+  preConfiguredApplicant: applicantSchema.optional(),
   applicantMode: z.enum(['No applicant configured', 'Fixed applicant', 'Fixed++']),
-  populateFromInventors: z.boolean(),
+  applicants: z.object({
+    fixed: applicantSchema.optional(),
+    fromInventors: z.array(z.string()).optional(),
+    additionalApplicants: z.array(applicantSchema).optional()
+  }).refine(
+    (data, ctx) => {
+      // Validation based on applicantMode
+      const mode = (ctx.path && ctx.path.length > 0) ? 
+        (ctx.path[0] as any).parent?.applicantMode : undefined;
+      
+      if (mode === 'Fixed applicant' && !data.fixed) {
+        return false;
+      }
+      if (mode === 'Fixed++' && !data.fixed) {
+        return false;
+      }
+      return true;
+    },
+    { message: "Fixed applicant is required for this mode" }
+  ),
   applicationDetails: z.object({
     title: z.string().min(5, { message: "Title is required" }),
     sheetCount: z.number().min(1, { message: "Sheet count is required" }),
@@ -132,12 +177,27 @@ const patentFormSchema = z.object({
     others: z.string().optional()
   }),
   publicationPreference: z.enum(['Ordinary', 'Early']).optional(),
-  examinationPreference: z.enum(['Ordinary', 'Expedited']).optional()
+  examinationPreference: z.enum(['Ordinary', 'Expedited']).optional(),
+  agentDetails: z.object({
+    inpaNo: z.string().min(1, { message: "INPA number is required" }),
+    agentName: z.string().min(2, { message: "Agent name is required" }),
+    agentMobile: z.string().min(10, { message: "Valid mobile number is required" }),
+    agentEmail: z.string().email({ message: "Valid email is required" })
+  }).optional(),
+  addressForService: z.object({
+    serviceName: z.string().min(2, { message: "Service name is required" }),
+    postalAddress: z.string().min(5, { message: "Postal address is required" }),
+    telephone: z.string().optional(),
+    mobile: z.string().min(10, { message: "Valid mobile number is required" }),
+    fax: z.string().optional(),
+    email: z.string().email({ message: "Valid email is required" })
+  }).optional()
 });
 
 export function PatentApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedInventors, setSelectedInventors] = useState<string[]>([]);
   const { generateAllDocuments, isGenerating } = useGenerateDocument();
   
   // Initialize the form with default values
@@ -146,9 +206,11 @@ export function PatentApplicationForm() {
     defaultValues: {
       applicationType: 'Provisional',
       inventors: [{ name: '', gender: 'Prefer not to disclose', nationality: 'India', residency: 'India', state: '', address: '' }],
-      applicants: [],
       applicantMode: 'No applicant configured',
-      populateFromInventors: true,
+      applicants: {
+        fromInventors: [],
+        additionalApplicants: []
+      },
       applicationDetails: {
         title: '',
         sheetCount: 1,
@@ -161,8 +223,10 @@ export function PatentApplicationForm() {
   const applicationType = form.watch('applicationType');
   const previousProvisionalFiled = form.watch('previousProvisionalFiled');
   const residencyInventors = form.watch('inventors').map(inv => inv.residency);
-  const residencyApplicants = form.watch('applicants').map(app => app.residency);
-  const populateFromInventors = form.watch('populateFromInventors');
+  const wantToPreConfigure = form.watch('wantToPreConfigure');
+  const applicantMode = form.watch('applicantMode');
+  const preConfiguredApplicant = form.watch('preConfiguredApplicant');
+  const applicants = form.watch('applicants');
   const sheetCount = form.watch('applicationDetails.sheetCount');
   const claimCount = form.watch('applicationDetails.claimCount');
   
@@ -184,6 +248,42 @@ export function PatentApplicationForm() {
   const calculatedPublicationFee = applicationType === 'Complete' 
     ? (form.watch('publicationPreference') === 'Early' ? 12500 : 2500) 
     : 0;
+  
+  // Check if expedited examination is allowed
+  const checkExpeditedExaminationEligibility = () => {
+    const allowedCategories = ['Startup', 'Small', 'Govt Entity', 'Education institute', 'Woman'];
+    
+    // Check if there's at least one woman applicant
+    const hasWomanApplicant = applicants.additionalApplicants?.some(app => app.category === 'Woman') || 
+                              (applicants.fixed?.category === 'Woman') ||
+                              false;
+    
+    if (hasWomanApplicant) {
+      return {
+        allowed: true,
+        reason: "At least one woman applicant"
+      };
+    }
+    
+    // Check if all applicants are in eligible categories
+    const fixedApplicantEligible = !applicants.fixed || allowedCategories.includes(applicants.fixed.category);
+    const additionalApplicantsEligible = !applicants.additionalApplicants || 
+      applicants.additionalApplicants.every(app => allowedCategories.includes(app.category));
+    
+    if (fixedApplicantEligible && additionalApplicantsEligible) {
+      return {
+        allowed: true,
+        reason: "All eligible"
+      };
+    }
+    
+    return {
+      allowed: false,
+      reason: "Expedited examination is only available for startups, small entities, government entities, educational institutes, or women applicants"
+    };
+  };
+  
+  const expeditedEligibility = checkExpeditedExaminationEligibility();
     
   const calculatedExaminationFee = applicationType === 'Complete'
     ? (form.watch('examinationPreference') === 'Expedited' ? 8000 : 4000)
@@ -217,7 +317,7 @@ export function PatentApplicationForm() {
       case 2:
         return ['inventors'];
       case 3:
-        return ['applicants', 'applicantMode', 'populateFromInventors'];
+        return ['wantToPreConfigure', 'preConfiguredApplicant', 'applicantMode', 'applicants'];
       case 4:
         return ['applicationDetails'];
       case 5:
@@ -247,35 +347,41 @@ export function PatentApplicationForm() {
   
   // Handle adding and removing applicants
   const addApplicant = () => {
-    const currentApplicants = form.getValues('applicants');
-    form.setValue('applicants', [
+    const currentApplicants = form.getValues('applicants').additionalApplicants || [];
+    form.setValue('applicants.additionalApplicants', [
       ...currentApplicants, 
       { name: '', nationality: 'India', residency: 'India', state: '', address: '', category: 'Human being' }
     ]);
   };
   
   const removeApplicant = (index: number) => {
-    const currentApplicants = form.getValues('applicants');
+    const currentApplicants = form.getValues('applicants').additionalApplicants || [];
     if (currentApplicants.length > 0) {
-      form.setValue('applicants', currentApplicants.filter((_, i) => i !== index));
+      form.setValue('applicants.additionalApplicants', currentApplicants.filter((_, i) => i !== index));
     }
   };
   
-  // Populate applicants from inventors
-  const populateApplicantsFromInventors = () => {
-    if (populateFromInventors) {
-      const inventors = form.getValues('inventors');
-      const applicants = inventors.map(inventor => ({
-        name: inventor.name,
-        nationality: inventor.nationality,
-        residency: inventor.residency,
-        state: inventor.state,
-        address: inventor.address,
-        category: 'Human being' as const
-      }));
-      form.setValue('applicants', applicants);
+  // Handle inventor selection for applicants
+  const handleInventorSelection = (inventorName: string) => {
+    const currentSelection = [...selectedInventors];
+    const index = currentSelection.indexOf(inventorName);
+    
+    if (index === -1) {
+      currentSelection.push(inventorName);
+    } else {
+      currentSelection.splice(index, 1);
     }
+    
+    setSelectedInventors(currentSelection);
+    form.setValue('applicants.fromInventors', currentSelection);
   };
+  
+  // Update form when pre-configured applicant changes
+  useEffect(() => {
+    if (wantToPreConfigure === 'Yes' && preConfiguredApplicant && applicantMode !== 'No applicant configured') {
+      form.setValue('applicants.fixed', preConfiguredApplicant);
+    }
+  }, [wantToPreConfigure, preConfiguredApplicant, applicantMode, form]);
   
   // Handle form submission
   const onSubmit = async (data: PatentFormData) => {
@@ -287,6 +393,8 @@ export function PatentApplicationForm() {
       data.applicationDetails.excessClaimFee = excessClaimFee;
       data.publicationFee = calculatedPublicationFee;
       data.examinationFee = calculatedExaminationFee;
+      data.expeditedAllowed = expeditedEligibility.allowed;
+      data.expeditedReason = expeditedEligibility.reason;
       
       console.log("Form submitted with data:", data);
       
@@ -622,107 +730,47 @@ export function PatentApplicationForm() {
               {/* Step 3: Applicant Details */}
               {currentStep === 3 && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold">Applicant Details</h2>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={populateApplicantsFromInventors}
-                        disabled={form.watch('inventors').length === 0}
-                      >
-                        Use Inventors as Applicants
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={addApplicant}
-                      >
-                        <PlusCircle className="h-4 w-4 mr-1" />
-                        <span>Add Applicant</span>
-                      </Button>
-                    </div>
-                  </div>
+                  <h2 className="text-lg font-bold">Applicant Details</h2>
                   
+                  {/* Pre-configure Applicant Option */}
                   <FormField
                     control={form.control}
-                    name="applicantMode"
+                    name="wantToPreConfigure"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel>Applicant Mode</FormLabel>
+                        <FormLabel>Do you want to pre-configure an applicant?</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
                             value={field.value}
-                            className="flex flex-col space-y-1"
+                            className="flex space-x-4"
                           >
-                            <div className="flex items-center space-x-3 space-y-0">
-                              <RadioGroupItem value="No applicant configured" id="no-applicant" />
-                              <Label htmlFor="no-applicant">No applicant configured</Label>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="Yes" id="yes-preconfig" />
+                              <Label htmlFor="yes-preconfig">Yes</Label>
                             </div>
-                            <div className="flex items-center space-x-3 space-y-0">
-                              <RadioGroupItem value="Fixed applicant" id="fixed-applicant" />
-                              <Label htmlFor="fixed-applicant">Fixed applicant</Label>
-                            </div>
-                            <div className="flex items-center space-x-3 space-y-0">
-                              <RadioGroupItem value="Fixed++" id="fixed-plus" />
-                              <Label htmlFor="fixed-plus">Fixed++</Label>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="No" id="no-preconfig" />
+                              <Label htmlFor="no-preconfig">No</Label>
                             </div>
                           </RadioGroup>
                         </FormControl>
                         <FormDescription>
-                          Choose how applicants are configured for this patent
+                          Pre-configuring allows you to set up an applicant that can be used in fixed modes
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="populateFromInventors"
-                    render={({ field }) => (
-                      <FormItem className="flex items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            Use inventors as applicants
-                          </FormLabel>
-                          <FormDescription>
-                            Checking this will automatically add all inventors as applicants
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {form.watch('applicants').map((_, index) => (
-                    <div key={index} className="p-4 border rounded-md space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-medium">Applicant {index + 1}</h3>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeApplicant(index)}
-                          className="h-8 px-2 text-destructive"
-                        >
-                          <MinusCircle className="h-4 w-4 mr-1" />
-                          <span>Remove</span>
-                        </Button>
-                      </div>
+                  {wantToPreConfigure === 'Yes' && (
+                    <div className="border rounded-md p-4 space-y-4">
+                      <h3 className="font-medium">Pre-configured Applicant</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name={`applicants.${index}.name`}
+                          name="preConfiguredApplicant.name"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Name</FormLabel>
@@ -736,7 +784,7 @@ export function PatentApplicationForm() {
                         
                         <FormField
                           control={form.control}
-                          name={`applicants.${index}.category`}
+                          name="preConfiguredApplicant.category"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Category</FormLabel>
@@ -751,11 +799,12 @@ export function PatentApplicationForm() {
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="Human being">Human being</SelectItem>
-                                  <SelectItem value="Company">Company</SelectItem>
                                   <SelectItem value="Startup">Startup</SelectItem>
                                   <SelectItem value="Small">Small Entity</SelectItem>
                                   <SelectItem value="Large">Large Entity</SelectItem>
                                   <SelectItem value="Education institute">Education Institute</SelectItem>
+                                  <SelectItem value="Govt Entity">Government Entity</SelectItem>
+                                  <SelectItem value="Woman">Woman</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -767,13 +816,13 @@ export function PatentApplicationForm() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name={`applicants.${index}.nationality`}
+                          name="preConfiguredApplicant.nationality"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Nationality</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                defaultValue={field.value || 'India'}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -793,13 +842,13 @@ export function PatentApplicationForm() {
                         
                         <FormField
                           control={form.control}
-                          name={`applicants.${index}.residency`}
+                          name="preConfiguredApplicant.residency"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Residency</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                defaultValue={field.value || 'India'}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -818,10 +867,10 @@ export function PatentApplicationForm() {
                         />
                       </div>
                       
-                      {residencyApplicants[index] === 'India' && (
+                      {form.watch('preConfiguredApplicant')?.residency === 'India' && (
                         <FormField
                           control={form.control}
-                          name={`applicants.${index}.state`}
+                          name="preConfiguredApplicant.state"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>State</FormLabel>
@@ -848,7 +897,7 @@ export function PatentApplicationForm() {
                       
                       <FormField
                         control={form.control}
-                        name={`applicants.${index}.address`}
+                        name="preConfiguredApplicant.address"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Address</FormLabel>
@@ -860,16 +909,489 @@ export function PatentApplicationForm() {
                         )}
                       />
                     </div>
-                  ))}
+                  )}
                   
-                  {form.watch('applicants').length === 0 && (
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>No Applicants</AlertTitle>
-                      <AlertDescription>
-                        No applicants have been added yet. You can add applicants manually or populate from inventors.
-                      </AlertDescription>
-                    </Alert>
+                  <FormField
+                    control={form.control}
+                    name="applicantMode"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Applicant Mode</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              
+                              // Reset applicants based on mode
+                              if (value === 'No applicant configured') {
+                                form.setValue('applicants', {
+                                  fromInventors: [],
+                                  additionalApplicants: []
+                                });
+                              } else if (value === 'Fixed applicant') {
+                                if (wantToPreConfigure === 'Yes' && preConfiguredApplicant) {
+                                  form.setValue('applicants', {
+                                    fixed: preConfiguredApplicant
+                                  });
+                                }
+                              } else if (value === 'Fixed++') {
+                                if (wantToPreConfigure === 'Yes' && preConfiguredApplicant) {
+                                  form.setValue('applicants', {
+                                    fixed: preConfiguredApplicant,
+                                    fromInventors: [],
+                                    additionalApplicants: []
+                                  });
+                                }
+                              }
+                            }}
+                            value={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <div className="flex items-center space-x-3 space-y-0">
+                              <RadioGroupItem value="No applicant configured" id="no-applicant" />
+                              <Label htmlFor="no-applicant">No applicant configured</Label>
+                            </div>
+                            <div className="flex items-center space-x-3 space-y-0">
+                              <RadioGroupItem 
+                                value="Fixed applicant" 
+                                id="fixed-applicant" 
+                                disabled={wantToPreConfigure !== 'Yes' || !preConfiguredApplicant}
+                              />
+                              <Label htmlFor="fixed-applicant">Fixed applicant</Label>
+                            </div>
+                            <div className="flex items-center space-x-3 space-y-0">
+                              <RadioGroupItem 
+                                value="Fixed++" 
+                                id="fixed-plus" 
+                                disabled={wantToPreConfigure !== 'Yes' || !preConfiguredApplicant}
+                              />
+                              <Label htmlFor="fixed-plus">Fixed++</Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormDescription>
+                          Choose how applicants are configured for this patent
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Applicant Mode: No applicant configured */}
+                  {applicantMode === 'No applicant configured' && (
+                    <div className="space-y-4">
+                      {/* Inventor Selection */}
+                      <div className="border rounded-md p-4">
+                        <h3 className="font-medium mb-3">Select Inventors as Applicants</h3>
+                        
+                        {form.watch('inventors').length > 0 ? (
+                          <div className="space-y-2">
+                            {form.watch('inventors').map((inventor, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`inventor-${index}`}
+                                  checked={selectedInventors.includes(inventor.name)}
+                                  onCheckedChange={() => handleInventorSelection(inventor.name)}
+                                />
+                                <Label htmlFor={`inventor-${index}`}>{inventor.name || `Inventor ${index + 1}`}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No inventors added yet.</p>
+                        )}
+                      </div>
+                      
+                      {/* Additional Applicants */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Additional Applicants</h3>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={addApplicant}
+                        >
+                          <PlusCircle className="h-4 w-4 mr-1" />
+                          <span>Add Applicant</span>
+                        </Button>
+                      </div>
+                      
+                      {applicants.additionalApplicants?.map((_, index) => (
+                        <div key={index} className="p-4 border rounded-md space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">Additional Applicant {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeApplicant(index)}
+                              className="h-8 px-2 text-destructive"
+                            >
+                              <MinusCircle className="h-4 w-4 mr-1" />
+                              <span>Remove</span>
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="Full name or organization name" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.category`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Category</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Human being">Human being</SelectItem>
+                                      <SelectItem value="Startup">Startup</SelectItem>
+                                      <SelectItem value="Small">Small Entity</SelectItem>
+                                      <SelectItem value="Large">Large Entity</SelectItem>
+                                      <SelectItem value="Education institute">Education Institute</SelectItem>
+                                      <SelectItem value="Govt Entity">Government Entity</SelectItem>
+                                      <SelectItem value="Woman">Woman</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          {/* Add other fields similar to preConfiguredApplicant */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.nationality`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nationality</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value || 'India'}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select nationality" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {countries.map(country => (
+                                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.residency`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Residency</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value || 'India'}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select country of residence" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {countries.map(country => (
+                                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`applicants.additionalApplicants.${index}.address`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Address</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="Complete address" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Applicant Mode: Fixed applicant */}
+                  {applicantMode === 'Fixed applicant' && wantToPreConfigure === 'Yes' && preConfiguredApplicant && (
+                    <div className="border rounded-md p-4">
+                      <h3 className="font-medium mb-3">Fixed Applicant</h3>
+                      
+                      <div className="bg-muted p-4 rounded-md">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium">Name:</p>
+                            <p>{preConfiguredApplicant.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Category:</p>
+                            <p>{preConfiguredApplicant.category}</p>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">Address:</p>
+                          <p>{preConfiguredApplicant.address}</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                          <div>
+                            <p className="text-sm font-medium">Nationality:</p>
+                            <p>{preConfiguredApplicant.nationality}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Residency:</p>
+                            <p>{preConfiguredApplicant.residency}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <FormDescription className="mt-2">
+                        This is your fixed applicant. No additional applicants can be added in this mode.
+                      </FormDescription>
+                    </div>
+                  )}
+                  
+                  {/* Applicant Mode: Fixed++ */}
+                  {applicantMode === 'Fixed++' && wantToPreConfigure === 'Yes' && preConfiguredApplicant && (
+                    <div className="space-y-4">
+                      <div className="border rounded-md p-4">
+                        <h3 className="font-medium mb-3">Fixed Applicant</h3>
+                        
+                        <div className="bg-muted p-4 rounded-md">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm font-medium">Name:</p>
+                              <p>{preConfiguredApplicant.name}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Category:</p>
+                              <p>{preConfiguredApplicant.category}</p>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <p className="text-sm font-medium">Address:</p>
+                            <p>{preConfiguredApplicant.address}</p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            <div>
+                              <p className="text-sm font-medium">Nationality:</p>
+                              <p>{preConfiguredApplicant.nationality}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Residency:</p>
+                              <p>{preConfiguredApplicant.residency}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Inventor Selection */}
+                      <div className="border rounded-md p-4">
+                        <h3 className="font-medium mb-3">Select Inventors as Additional Applicants</h3>
+                        
+                        {form.watch('inventors').length > 0 ? (
+                          <div className="space-y-2">
+                            {form.watch('inventors').map((inventor, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`inventor-fixed-${index}`}
+                                  checked={selectedInventors.includes(inventor.name)}
+                                  onCheckedChange={() => handleInventorSelection(inventor.name)}
+                                />
+                                <Label htmlFor={`inventor-fixed-${index}`}>{inventor.name || `Inventor ${index + 1}`}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No inventors added yet.</p>
+                        )}
+                      </div>
+                      
+                      {/* Additional Applicants */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Additional Applicants</h3>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={addApplicant}
+                        >
+                          <PlusCircle className="h-4 w-4 mr-1" />
+                          <span>Add Applicant</span>
+                        </Button>
+                      </div>
+                      
+                      {applicants.additionalApplicants?.map((_, index) => (
+                        <div key={index} className="p-4 border rounded-md space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">Additional Applicant {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeApplicant(index)}
+                              className="h-8 px-2 text-destructive"
+                            >
+                              <MinusCircle className="h-4 w-4 mr-1" />
+                              <span>Remove</span>
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="Full name or organization name" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.category`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Category</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Human being">Human being</SelectItem>
+                                      <SelectItem value="Startup">Startup</SelectItem>
+                                      <SelectItem value="Small">Small Entity</SelectItem>
+                                      <SelectItem value="Large">Large Entity</SelectItem>
+                                      <SelectItem value="Education institute">Education Institute</SelectItem>
+                                      <SelectItem value="Govt Entity">Government Entity</SelectItem>
+                                      <SelectItem value="Woman">Woman</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          {/* Add other fields similar to preConfiguredApplicant */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.nationality`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nationality</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value || 'India'}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select nationality" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {countries.map(country => (
+                                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`applicants.additionalApplicants.${index}.residency`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Residency</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value || 'India'}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select country of residence" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {countries.map(country => (
+                                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`applicants.additionalApplicants.${index}.address`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Address</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="Complete address" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
@@ -1043,7 +1565,7 @@ export function PatentApplicationForm() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Examination Information</AlertTitle>
                     <AlertDescription>
-                      A request for examination must be filed within 48 months from the priority date. Expedited examination is available for startups, small entities, and female applicants at an additional fee.
+                      A request for examination must be filed within 48 months from the priority date. Expedited examination is available for startups, small entities, educational institutes, government entities, and women applicants at an additional fee.
                     </AlertDescription>
                   </Alert>
                   
@@ -1064,11 +1586,26 @@ export function PatentApplicationForm() {
                               <Label htmlFor="ordinary-exam">Ordinary - ₹4,000</Label>
                             </div>
                             <div className="flex items-center space-x-3 space-y-0">
-                              <RadioGroupItem value="Expedited" id="expedited-exam" />
-                              <Label htmlFor="expedited-exam">Expedited - ₹8,000</Label>
+                              <RadioGroupItem 
+                                value="Expedited" 
+                                id="expedited-exam" 
+                                disabled={!expeditedEligibility.allowed}
+                              />
+                              <Label 
+                                htmlFor="expedited-exam" 
+                                className={!expeditedEligibility.allowed ? "text-muted-foreground" : ""}
+                              >
+                                Expedited - ₹8,000
+                              </Label>
                             </div>
                           </RadioGroup>
                         </FormControl>
+                        {!expeditedEligibility.allowed && (
+                          <div className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md border border-yellow-200 flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span>{expeditedEligibility.reason}</span>
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1083,7 +1620,170 @@ export function PatentApplicationForm() {
                 </div>
               )}
               
-              {/* Step 7: Review and Submit */}
+              {/* Step 7: Agent Details & Address for Service */}
+              {currentStep === 7 && (
+                <div className="space-y-6 animate-fade-in">
+                  <h2 className="text-lg font-bold">Agent Details</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="agentDetails.inpaNo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>INPA Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter INPA number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="agentDetails.agentName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Agent Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter agent name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="agentDetails.agentMobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter mobile number" />
+                          </FormControl>
+                          <FormDescription>
+                            OTP will be sent to this number for verification
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="agentDetails.agentEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter email address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <h2 className="text-lg font-bold mt-8">Address for Service in India</h2>
+                  
+                  <FormField
+                    control={form.control}
+                    name="addressForService.serviceName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Service Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter service name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="addressForService.postalAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Postal Address</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Enter complete postal address" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="addressForService.telephone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telephone (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter telephone number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="addressForService.mobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter mobile number" />
+                          </FormControl>
+                          <FormDescription>
+                            OTP will be sent to this number for verification
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="addressForService.fax"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fax (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter fax number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="addressForService.email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter email address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Final Step: Review and Submit */}
               {currentStep === totalSteps && (
                 <div className="space-y-6 animate-fade-in">
                   <h2 className="text-lg font-bold">Review and Submit</h2>
@@ -1112,18 +1812,65 @@ export function PatentApplicationForm() {
                     </div>
                     
                     <div>
-                      <h3 className="font-medium">Applicant(s)</h3>
-                      {form.watch('applicants').length > 0 ? (
-                        <ul className="list-disc pl-5 space-y-2">
-                          {form.watch('applicants').map((applicant, index) => (
-                            <li key={index}>
-                              {applicant.name}, {applicant.category}
-                              <p className="text-sm text-muted-foreground">{applicant.address}</p>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-muted-foreground">No applicants added</p>
+                      <h3 className="font-medium">Applicant Mode</h3>
+                      <p>{applicantMode}</p>
+                      
+                      {applicantMode === 'Fixed applicant' && applicants.fixed && (
+                        <div className="mt-2">
+                          <h4 className="font-medium text-sm">Fixed Applicant:</h4>
+                          <p>{applicants.fixed.name}, {applicants.fixed.category}</p>
+                          <p className="text-sm text-muted-foreground">{applicants.fixed.address}</p>
+                        </div>
+                      )}
+                      
+                      {applicantMode === 'Fixed++' && (
+                        <>
+                          {applicants.fixed && (
+                            <div className="mt-2">
+                              <h4 className="font-medium text-sm">Fixed Applicant:</h4>
+                              <p>{applicants.fixed.name}, {applicants.fixed.category}</p>
+                              <p className="text-sm text-muted-foreground">{applicants.fixed.address}</p>
+                            </div>
+                          )}
+                          
+                          {applicants.fromInventors && applicants.fromInventors.length > 0 && (
+                            <div className="mt-2">
+                              <h4 className="font-medium text-sm">From Inventors:</h4>
+                              <ul className="list-disc pl-5">
+                                {applicants.fromInventors.map((name, idx) => (
+                                  <li key={idx}>{name}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {(applicantMode === 'No applicant configured' || applicantMode === 'Fixed++') && 
+                       applicants.additionalApplicants && applicants.additionalApplicants.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="font-medium text-sm">Additional Applicants:</h4>
+                          <ul className="list-disc pl-5">
+                            {applicants.additionalApplicants.map((app, idx) => (
+                              <li key={idx}>
+                                {app.name}, {app.category}
+                                <p className="text-sm text-muted-foreground">{app.address}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {applicantMode === 'No applicant configured' && 
+                       applicants.fromInventors && applicants.fromInventors.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="font-medium text-sm">From Inventors:</h4>
+                          <ul className="list-disc pl-5">
+                            {applicants.fromInventors.map((name, idx) => (
+                              <li key={idx}>{name}</li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                     </div>
                     
@@ -1144,9 +1891,32 @@ export function PatentApplicationForm() {
                         <div>
                           <h3 className="font-medium">Examination</h3>
                           <p>{form.watch('examinationPreference')} Examination</p>
+                          {form.watch('examinationPreference') === 'Expedited' && (
+                            <p className="text-sm">Reason: {expeditedEligibility.reason}</p>
+                          )}
                         </div>
                       </>
                     )}
+                    
+                    <div>
+                      <h3 className="font-medium">Agent Details</h3>
+                      <p>
+                        {form.watch('agentDetails')?.agentName || ''} ({form.watch('agentDetails')?.inpaNo || ''})
+                      </p>
+                      <p>
+                        {form.watch('agentDetails')?.agentEmail || ''}, {form.watch('agentDetails')?.agentMobile || ''}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-medium">Address for Service</h3>
+                      <p>{form.watch('addressForService')?.serviceName || ''}</p>
+                      <p>{form.watch('addressForService')?.postalAddress || ''}</p>
+                      <p>
+                        Email: {form.watch('addressForService')?.email || ''}, 
+                        Mobile: {form.watch('addressForService')?.mobile || ''}
+                      </p>
+                    </div>
                     
                     <Separator />
                     
@@ -1197,6 +1967,17 @@ export function PatentApplicationForm() {
                       Please review all the information above before submitting. Once submitted, you will be able to download the generated documents.
                     </AlertDescription>
                   </Alert>
+                  
+                  {/* JSON Preview Button - For debugging */}
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full flex items-center gap-2"
+                    onClick={() => console.log(JSON.stringify(form.getValues(), null, 2))}
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span>View JSON Data</span>
+                  </Button>
                 </div>
               )}
               
