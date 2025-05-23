@@ -45,3 +45,6 @@ export const emptyValuesFactory = (): Partial<PatentFormValues> => ({
     email: ""
   }
 });
+
+// Export the empty form values directly
+export const emptyPatentFormValues = emptyValuesFactory();
