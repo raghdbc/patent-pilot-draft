@@ -128,90 +128,92 @@ export const patentFormSchema = z.object({
   // 10. Address for Service in India
   addressForService: serviceAddressSchema,
 })
-.refine(
-  (data) => {
-    // If applicationType is complete, previousProvisionalFiled must be defined
-    if (data.applicationType === "complete") {
-      return data.previousProvisionalFiled !== undefined;
-    }
-    return true;
-  },
-  {
-    message: "Please specify if a provisional application has been filed",
-    path: ["previousProvisionalFiled"],
+.superRefine((data, ctx) => {
+  // If applicationType is complete, previousProvisionalFiled must be defined
+  if (data.applicationType === "complete" && data.previousProvisionalFiled === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Please specify if a provisional application has been filed",
+      path: ["previousProvisionalFiled"],
+    });
   }
-)
-.refine(
-  (data) => {
-    // If previousProvisionalFiled is yes, provisionalApplicationNumber must be defined
-    if (
-      data.applicationType === "complete" && 
-      data.previousProvisionalFiled === "yes"
-    ) {
-      return !!data.provisionalApplicationNumber;
-    }
-    return true;
-  },
-  {
-    message: "Provisional application number is required",
-    path: ["provisionalApplicationNumber"],
+  
+  // If previousProvisionalFiled is yes, provisionalApplicationNumber must be defined
+  if (
+    data.applicationType === "complete" && 
+    data.previousProvisionalFiled === "yes" &&
+    !data.provisionalApplicationNumber
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provisional application number is required",
+      path: ["provisionalApplicationNumber"],
+    });
   }
-)
-.refine(
-  (data) => {
-    // If applicationType is complete, publicationPreference must be defined
-    if (data.applicationType === "complete") {
-      return data.publicationPreference !== undefined;
-    }
-    return true;
-  },
-  {
-    message: "Publication preference is required for complete applications",
-    path: ["publicationPreference"],
+  
+  // If applicationType is complete, publicationPreference must be defined
+  if (data.applicationType === "complete" && data.publicationPreference === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Publication preference is required for complete applications",
+      path: ["publicationPreference"],
+    });
   }
-)
-.refine(
-  (data) => {
-    // If applicationType is complete, examinationPreference must be defined
-    if (data.applicationType === "complete") {
-      return data.examinationPreference !== undefined;
-    }
-    return true;
-  },
-  {
-    message: "Examination preference is required for complete applications",
-    path: ["examinationPreference"],
+  
+  // If applicationType is complete, examinationPreference must be defined
+  if (data.applicationType === "complete" && data.examinationPreference === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Examination preference is required for complete applications",
+      path: ["examinationPreference"],
+    });
   }
-)
-.refine(
-  (data) => {
-    // If wantToPreConfigure is yes, preConfiguredApplicant must be defined
-    if (data.wantToPreConfigure === "yes") {
-      return data.preConfiguredApplicant !== undefined;
-    }
-    return true;
-  },
-  {
-    message: "Please complete the pre-configured applicant details",
-    path: ["preConfiguredApplicant"],
+  
+  // If wantToPreConfigure is yes, preConfiguredApplicant must be defined
+  if (data.wantToPreConfigure === "yes" && data.preConfiguredApplicant === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Please complete the pre-configured applicant details",
+      path: ["preConfiguredApplicant"],
+    });
   }
-)
-.refine(
-  (data) => {
-    // If applicantMode is fixed or fixed_plus, preConfiguredApplicant must be defined
-    if (
-      (data.applicantMode === "fixed" || data.applicantMode === "fixed_plus") && 
-      data.wantToPreConfigure === "yes"
-    ) {
-      return data.preConfiguredApplicant !== undefined;
-    }
-    return true;
-  },
-  {
-    message: "Pre-configured applicant is required for Fixed or Fixed++ modes",
-    path: ["preConfiguredApplicant"],
+  
+  // If applicantMode is fixed or fixed_plus, and wantToPreConfigure is yes, preConfiguredApplicant must be defined
+  if (
+    (data.applicantMode === "fixed" || data.applicantMode === "fixed_plus") && 
+    data.wantToPreConfigure === "yes" &&
+    data.preConfiguredApplicant === undefined
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Pre-configured applicant is required for Fixed or Fixed++ modes",
+      path: ["preConfiguredApplicant"],
+    });
   }
-);
+  
+  // If applicantMode is fixed, we must have a fixed applicant
+  if (data.applicantMode === "fixed" && !data.applicants.fixed) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A fixed applicant must be selected for Fixed mode",
+      path: ["applicants", "fixed"],
+    });
+  }
+  
+  // If applicantMode is fixed_plus, we must have both fixed and at least either fromInventors or additionalApplicants
+  if (
+    data.applicantMode === "fixed_plus" && 
+    (!data.applicants.fixed || 
+      ((!data.applicants.fromInventors || data.applicants.fromInventors.length === 0) && 
+       (!data.applicants.additionalApplicants || data.applicants.additionalApplicants.length === 0)))
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Fixed++ mode requires a fixed applicant and at least one additional applicant selection",
+      path: ["applicants"],
+    });
+  }
+});
 
 export type PatentFormValues = z.infer<typeof patentFormSchema>;
 
