@@ -109,7 +109,7 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Basic Filing Fee:</span>
-                  <span className="font-medium">{formatCurrency(feeSummary.basicFee)}</span>
+                  <span className="font-medium">{formatCurrency(feeSummary.baseFee)}</span>
                 </div>
                 {feeSummary.earlyPublicationFee !== undefined && (
                   <div className="flex justify-between">
