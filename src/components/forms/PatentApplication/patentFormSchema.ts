@@ -7,6 +7,9 @@ export * from "./schemas/serviceSchema";
 export * from "./schemas/documentSchema";
 export * from "./schemas/commonValidation";
 
-// Fix for duplicate export - import and re-export with explicit name
+// Import and re-export with explicit name to avoid duplicate exports
 import { emptyValuesFactory } from "./schemas/initialValues";
 export { emptyValuesFactory };
+
+// Export emptyPatentFormValues as a constant created from the factory function
+export const emptyPatentFormValues = emptyValuesFactory();
