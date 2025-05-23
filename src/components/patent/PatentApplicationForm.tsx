@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { patentFormSchema } from "@/components/forms/PatentApplication/schemas/patentFormSchema";
-import { emptyPatentFormValues } from "@/components/forms/PatentApplication/schemas/initialValues";
+// Import from correct location
+import { emptyValuesFactory } from "@/components/forms/PatentApplication/schemas/initialValues";
 
 export function PatentApplicationForm() {
   const [step, setStep] = useState(1);
@@ -18,7 +19,7 @@ export function PatentApplicationForm() {
   
   const form = useForm({
     resolver: zodResolver(patentFormSchema),
-    defaultValues: emptyPatentFormValues,
+    defaultValues: emptyValuesFactory(),
     mode: "onChange"
   });
   
