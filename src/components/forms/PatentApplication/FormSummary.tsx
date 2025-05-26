@@ -4,11 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  calculateTotalFee, 
-  formatCurrency, 
-  calculateTotalSheets 
-} from "@/utils/patentFormHelpers";
+import { calculateTotalFee, formatCurrency, calculateTotalSheets } from "@/utils/patentFormHelpers";
 import { ApplicantCategory } from "@/models/patentApplication";
 
 interface FormSummaryProps {
@@ -47,8 +43,7 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
     totalSheets,
     formData.others?.numberOfClaims || 0,
     isEarlyPublication,
-    isExpeditedExamination,
-    formData.applicationType
+    isExpeditedExamination
   );
 
   return (
@@ -109,7 +104,7 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Basic Filing Fee:</span>
-                  <span className="font-medium">{formatCurrency(feeSummary.baseFee)}</span>
+                  <span className="font-medium">{formatCurrency(feeSummary.basicFee)}</span>
                 </div>
                 {feeSummary.earlyPublicationFee !== undefined && (
                   <div className="flex justify-between">

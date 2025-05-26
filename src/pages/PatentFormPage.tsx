@@ -1,6 +1,6 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { PatentForm } from "@/components/patent/PatentForm";
+import { MultiStepPatentForm } from "@/components/forms/PatentApplication/MultiStepPatentForm";
 import { FileText } from "lucide-react";
 
 export default function PatentFormPage() {
@@ -17,7 +17,7 @@ export default function PatentFormPage() {
           </p>
         </div>
         
-        <PatentForm />
+        <MultiStepPatentForm />
       </div>
     </MainLayout>
   );
