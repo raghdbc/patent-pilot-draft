@@ -80,7 +80,7 @@ export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; rea
   // Check if at least one applicant is female
   const hasWomanApplicant = 
     applicants?.fixed?.category === 'woman' ||
-    applicants?.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
+    (applicants?.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false);
   
   if (hasWomanApplicant) {
     return { allowed: true, reason: 'At least one woman applicant' };
@@ -110,7 +110,7 @@ export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; rea
     if (!additionalEligible) allEligible = false;
   }
   
-  if (allEligible && (applicants?.fixed || applicants?.additionalApplicants?.length > 0)) {
+  if (allEligible && (applicants?.fixed || (applicants?.additionalApplicants?.length ?? 0) > 0)) {
     return { allowed: true, reason: 'All eligible' };
   }
   
