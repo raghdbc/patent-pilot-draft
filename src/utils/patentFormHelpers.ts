@@ -1,130 +1,23 @@
 
-import { 
-  ApplicantCategory, 
-  ApplicantDetails
-} from "@/models/patentApplication";
+import { ApplicantCategory } from "@/models/patentApplication";
 
-export interface FeeSummary {
-  basicFee: number;
-  earlyPublicationFee?: number;
-  expeditedExaminationFee?: number;
-  excessSheetFee: number;
-  excessClaimFee: number;
-  totalFee: number;
-}
-
-// Calculate the basic filing fee based on applicant category and mode
-export const calculateBasicFee = (
-  category: ApplicantCategory, 
-  mode: 'online' | 'offline'
-): number => {
-  if (mode === 'online') {
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 1600;
-      case 'startup':
-      case 'small_entity':
-        return 4000;
-      case 'education_institute':
-      case 'govt_entity':
-        return 4000;
-      default: // large entity
-        return 8000;
-    }
-  } else { // offline
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 1750;
-      case 'startup':
-      case 'small_entity':
-        return 4400;
-      case 'education_institute':
-      case 'govt_entity':
-        return 4400;
-      default: // large entity
-        return 8800;
-    }
-  }
+export const calculateTotalSheets = (sheetCounts: {
+  patentDocumentSheets: number;
+  abstractSheets: number;
+  claimsSheets: number;
+  drawingSheets: number;
+}): number => {
+  return (
+    sheetCounts.patentDocumentSheets +
+    sheetCounts.abstractSheets +
+    sheetCounts.claimsSheets +
+    sheetCounts.drawingSheets
+  );
 };
 
-// Calculate early publication fee
-export const calculateEarlyPublicationFee = (
-  category: ApplicantCategory, 
-  mode: 'online' | 'offline'
-): number => {
-  if (mode === 'online') {
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 2750;
-      case 'startup':
-      case 'small_entity':
-        return 6875;
-      case 'education_institute':
-      case 'govt_entity':
-        return 6875;
-      default: // large entity
-        return 13750;
-    }
-  } else { // offline
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 3025;
-      case 'startup':
-      case 'small_entity':
-        return 7560;
-      case 'education_institute':
-      case 'govt_entity':
-        return 7560;
-      default: // large entity
-        return 15125;
-    }
-  }
-};
-
-// Calculate expedited examination fee
-export const calculateExpeditedExaminationFee = (
-  category: ApplicantCategory, 
-  mode: 'online' | 'offline'
-): number => {
-  if (mode === 'online') {
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 8000;
-      case 'startup':
-      case 'small_entity':
-        return 20000;
-      case 'education_institute':
-      case 'govt_entity':
-        return 20000;
-      default: // large entity (should not be eligible, but included for completeness)
-        return 60000;
-    }
-  } else { // offline
-    switch (category) {
-      case 'natural_person':
-      case 'woman':
-        return 8800;
-      case 'startup':
-      case 'small_entity':
-        return 22000;
-      case 'education_institute':
-      case 'govt_entity':
-        return 22000;
-      default: // large entity (should not be eligible, but included for completeness)
-        return 66000;
-    }
-  }
-};
-
-// Calculate excess sheet fee
 export const calculateExcessSheetFee = (
-  totalSheets: number, 
-  category: ApplicantCategory, 
+  totalSheets: number,
+  category: ApplicantCategory,
   mode: 'online' | 'offline'
 ): number => {
   if (totalSheets <= 30) return 0;
@@ -145,10 +38,9 @@ export const calculateExcessSheetFee = (
   return excessSheets * ratePerSheet;
 };
 
-// Calculate excess claim fee
 export const calculateExcessClaimFee = (
-  totalClaims: number, 
-  category: ApplicantCategory, 
+  totalClaims: number,
+  category: ApplicantCategory,
   mode: 'online' | 'offline'
 ): number => {
   if (totalClaims <= 10) return 0;
@@ -169,13 +61,26 @@ export const calculateExcessClaimFee = (
   return excessClaims * ratePerClaim;
 };
 
-// Check if expedited examination is allowed
-export const isExpeditedExamAllowed = (applicants: ApplicantDetails): { allowed: boolean; reason?: string } => {
+export const getEarlyPublicationFee = (
+  category: ApplicantCategory,
+  mode: 'online' | 'offline'
+): number => {
+  if (mode === 'online') {
+    if (category === 'natural_person' || category === 'woman') return 2500;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) return 6250;
+    else return 12500;
+  } else { // offline
+    if (category === 'natural_person' || category === 'woman') return 5000;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) return 12500;
+    else return 25000;
+  }
+};
+
+export const isExpeditedExamAllowed = (applicants: any): { allowed: boolean; reason?: string } => {
   // Check if at least one applicant is female
-  const hasWomanApplicant = Boolean(
-    (applicants.additionalApplicants && applicants.additionalApplicants.some(app => app.category === 'woman')) ||
-    (applicants.fixed && applicants.fixed.category === 'woman')
-  );
+  const hasWomanApplicant = 
+    applicants?.fixed?.category === 'woman' ||
+    applicants?.additionalApplicants?.some((app: any) => app.category === 'woman') ?? false;
   
   if (hasWomanApplicant) {
     return { allowed: true, reason: 'At least one woman applicant' };
@@ -190,104 +95,84 @@ export const isExpeditedExamAllowed = (applicants: ApplicantDetails): { allowed:
     'woman'
   ];
   
-  // Check fixed applicant if present
-  if (applicants.fixed && !eligibleCategories.includes(applicants.fixed.category)) {
-    return { allowed: false };
+  let allEligible = true;
+  
+  // Check fixed applicant
+  if (applicants?.fixed && !eligibleCategories.includes(applicants.fixed.category)) {
+    allEligible = false;
   }
   
   // Check additional applicants
-  const allAdditionalApplicantsEligible = !applicants.additionalApplicants || 
-    (applicants.additionalApplicants.length > 0 && 
-     applicants.additionalApplicants.every(app => eligibleCategories.includes(app.category)));
+  if (applicants?.additionalApplicants?.length > 0) {
+    const additionalEligible = applicants.additionalApplicants.every(
+      (app: any) => eligibleCategories.includes(app.category)
+    );
+    if (!additionalEligible) allEligible = false;
+  }
   
-  if (applicants.fixed || (applicants.additionalApplicants && applicants.additionalApplicants.length > 0)) {
-    if (allAdditionalApplicantsEligible) {
-      return { allowed: true, reason: 'All applicants are eligible entities' };
-    }
+  if (allEligible && (applicants?.fixed || applicants?.additionalApplicants?.length > 0)) {
+    return { allowed: true, reason: 'All eligible' };
   }
   
   return { allowed: false };
 };
 
-// Calculate the total fee for a patent application
+export const formatCurrency = (amount: number): string => {
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
 export const calculateTotalFee = (
   category: ApplicantCategory,
   mode: 'online' | 'offline',
   totalSheets: number,
   totalClaims: number,
-  earlyPublication: boolean = false,
-  expeditedExamination: boolean = false
-): FeeSummary => {
-  const basicFee = calculateBasicFee(category, mode);
+  isEarlyPublication: boolean,
+  isExpeditedExamination: boolean
+) => {
+  // Base fees for different categories
+  let baseFee: number;
   
-  const earlyPublicationFee = earlyPublication 
-    ? calculateEarlyPublicationFee(category, mode) 
-    : 0;
-  
-  const expeditedExaminationFee = expeditedExamination 
-    ? calculateExpeditedExaminationFee(category, mode) 
-    : 0;
+  if (mode === 'online') {
+    if (category === 'natural_person' || category === 'woman') baseFee = 1600;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) baseFee = 4000;
+    else baseFee = 8000;
+  } else {
+    if (category === 'natural_person' || category === 'woman') baseFee = 3200;
+    else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) baseFee = 8000;
+    else baseFee = 16000;
+  }
   
   const excessSheetFee = calculateExcessSheetFee(totalSheets, category, mode);
   const excessClaimFee = calculateExcessClaimFee(totalClaims, category, mode);
   
-  const totalFee = basicFee + earlyPublicationFee + expeditedExaminationFee + excessSheetFee + excessClaimFee;
+  let earlyPublicationFee = 0;
+  if (isEarlyPublication) {
+    earlyPublicationFee = getEarlyPublicationFee(category, mode);
+  }
+  
+  let expeditedExaminationFee = 0;
+  if (isExpeditedExamination) {
+    if (mode === 'online') {
+      if (category === 'natural_person' || category === 'woman') expeditedExaminationFee = 8000;
+      else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) expeditedExaminationFee = 20000;
+      else expeditedExaminationFee = 40000;
+    } else {
+      if (category === 'natural_person' || category === 'woman') expeditedExaminationFee = 16000;
+      else if (['startup', 'small_entity', 'education_institute', 'govt_entity'].includes(category)) expeditedExaminationFee = 40000;
+      else expeditedExaminationFee = 80000;
+    }
+  }
+  
+  const totalFee = baseFee + excessSheetFee + excessClaimFee + earlyPublicationFee + expeditedExaminationFee;
   
   return {
-    basicFee,
-    earlyPublicationFee: earlyPublication ? earlyPublicationFee : undefined,
-    expeditedExaminationFee: expeditedExamination ? expeditedExaminationFee : undefined,
+    baseFee,
     excessSheetFee,
     excessClaimFee,
-    totalFee
+    earlyPublicationFee: isEarlyPublication ? earlyPublicationFee : undefined,
+    expeditedExaminationFee: isExpeditedExamination ? expeditedExaminationFee : undefined,
+    totalFee,
+    excessSheets: Math.max(0, totalSheets - 30),
+    excessClaims: Math.max(0, totalClaims - 10)
   };
-};
-
-// Create formatted fee output object for JSON
-export const createFeeOutputJSON = (
-  category: ApplicantCategory,
-  totalSheets: number,
-  totalClaims: number
-) => {
-  // Calculate excess sheet fee
-  const excessSheetFee = {
-    online: formatCurrency(calculateExcessSheetFee(totalSheets, category, 'online')),
-    offline: formatCurrency(calculateExcessSheetFee(totalSheets, category, 'offline'))
-  };
-  
-  // Calculate excess claim fee
-  const excessClaimFee = {
-    online: formatCurrency(calculateExcessClaimFee(totalClaims, category, 'online')),
-    offline: formatCurrency(calculateExcessClaimFee(totalClaims, category, 'offline'))
-  };
-  
-  // Calculate early publication fee
-  const earlyPublicationFee = {
-    online: formatCurrency(calculateEarlyPublicationFee(category, 'online')),
-    offline: formatCurrency(calculateEarlyPublicationFee(category, 'offline'))
-  };
-  
-  return {
-    excessSheetFee,
-    excessClaimFee,
-    earlyPublicationFee
-  };
-};
-
-// Format currency for display
-export const formatCurrency = (amount: number): string => {
-  return `₹${amount.toLocaleString('en-IN')}`;
-};
-
-// Calculate total sheet count
-export const calculateTotalSheets = (sheetCounts: {
-  patentDocumentSheets: number;
-  abstractSheets: number;
-  claimsSheets: number;
-  drawingSheets: number;
-}): number => {
-  return (sheetCounts.patentDocumentSheets || 0) + 
-         (sheetCounts.abstractSheets || 0) + 
-         (sheetCounts.claimsSheets || 0) + 
-         (sheetCounts.drawingSheets || 0);
 };

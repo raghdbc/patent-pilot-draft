@@ -19,7 +19,12 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
   const formData = form.getValues();
   
   // Calculate total sheets
-  const totalSheets = calculateTotalSheets(formData.sheetCounts || {});
+  const totalSheets = calculateTotalSheets(formData.sheetCounts || {
+    patentDocumentSheets: 0,
+    abstractSheets: 0,
+    claimsSheets: 0,
+    drawingSheets: 0
+  });
   
   // Determine primary applicant category for fee calculation
   const getPrimaryApplicantCategory = (): ApplicantCategory => {
@@ -104,7 +109,7 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Basic Filing Fee:</span>
-                  <span className="font-medium">{formatCurrency(feeSummary.basicFee)}</span>
+                  <span className="font-medium">{formatCurrency(feeSummary.baseFee)}</span>
                 </div>
                 {feeSummary.earlyPublicationFee !== undefined && (
                   <div className="flex justify-between">
