@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
 import {
@@ -70,13 +69,13 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
   });
   
   useEffect(() => {
-    // If applicantMode is 'fixed', set the fixed applicant to the preConfiguredApplicant
-    if (applicantMode === 'fixed' && preConfiguredApplicant) {
+    // If applicantMode is 'fixed' or 'fixed_plus', set the fixed applicant to the preConfiguredApplicant
+    if ((applicantMode === 'fixed' || applicantMode === 'fixed_plus') && preConfiguredApplicant) {
       form.setValue('applicants.fixed', preConfiguredApplicant);
     }
-    // If applicantMode is 'fixed_plus', also set the fixed applicant
-    if (applicantMode === 'fixed_plus' && preConfiguredApplicant) {
-      form.setValue('applicants.fixed', preConfiguredApplicant);
+    // Clear fixed applicant if mode is no_applicant_configured
+    if (applicantMode === 'no_applicant_configured') {
+      form.setValue('applicants.fixed', undefined);
     }
   }, [applicantMode, preConfiguredApplicant, form]);
   
@@ -96,7 +95,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
   
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Applicant Details</h3>
+      <h3 className="text-lg font-medium">Applicant Details Section</h3>
       
       <FormField
         control={form.control}
@@ -118,18 +117,15 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                   <Label htmlFor="no-configured">No Applicant Configured</Label>
                 </div>
                 
-                {fixedModesAvailable && (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fixed" id="fixed" disabled={!fixedModesAvailable} />
-                      <Label htmlFor="fixed" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fixed_plus" id="fixed-plus" disabled={!fixedModesAvailable} />
-                      <Label htmlFor="fixed-plus" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed++</Label>
-                    </div>
-                  </>
-                )}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="fixed" id="fixed" disabled={!fixedModesAvailable} />
+                  <Label htmlFor="fixed" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="fixed_plus" id="fixed-plus" disabled={!fixedModesAvailable} />
+                  <Label htmlFor="fixed-plus" className={!fixedModesAvailable ? "opacity-50" : ""}>Fixed++</Label>
+                </div>
               </RadioGroup>
             </FormControl>
             <FormDescription>
@@ -156,7 +152,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                Select Inventors as Applicants
+                Select Inventors as Applicants (Non-editable list)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -199,7 +195,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
           
           <div className="pt-4">
             <h4 className="font-medium mb-2 flex items-center justify-between">
-              <span>Additional Applicants</span>
+              <span>+ Add Applicant</span>
               <Button 
                 type="button" 
                 size="sm" 
@@ -229,13 +225,12 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                       </div>
                       
                       <div className="grid gap-6 sm:grid-cols-2">
-                        {/* Name, Category, Nationality, Residency, State (if applicable), Address */}
                         <FormField
                           control={form.control}
                           name={`applicants.additionalApplicants.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Full Name</FormLabel>
+                              <FormLabel>Name</FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter applicant's full name" {...field} />
                               </FormControl>
@@ -260,24 +255,20 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="natural_person">Human (Natural Person)</SelectItem>
+                                  <SelectItem value="natural_person">Human</SelectItem>
                                   <SelectItem value="startup">Startup</SelectItem>
-                                  <SelectItem value="small_entity">Small Entity</SelectItem>
-                                  <SelectItem value="large_entity">Large Entity</SelectItem>
-                                  <SelectItem value="education_institute">Educational Institute</SelectItem>
-                                  <SelectItem value="govt_entity">Government Entity</SelectItem>
+                                  <SelectItem value="small_entity">Small</SelectItem>
+                                  <SelectItem value="large_entity">Large</SelectItem>
+                                  <SelectItem value="education_institute">Education Institute</SelectItem>
+                                  <SelectItem value="govt_entity">Govt Entity</SelectItem>
                                   <SelectItem value="woman">Woman</SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormDescription>
-                                The category affects fees and eligibility for expedited examination
-                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                         
-                        {/* Rest of form fields for each applicant */}
                         <FormField
                           control={form.control}
                           name={`applicants.additionalApplicants.${index}.nationality`}
@@ -311,7 +302,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                           name={`applicants.additionalApplicants.${index}.residency`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Country of Residence</FormLabel>
+                              <FormLabel>Residency</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
                                 defaultValue={field.value}
@@ -406,6 +397,9 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
               <User className="h-5 w-5 mr-2" />
               Pre-configured Applicant (Read-only)
             </CardTitle>
+            <CardDescription>
+              Cannot add/edit anything in Fixed mode
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
@@ -488,7 +482,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                Select Inventors as Additional Applicants
+                Inventor Checkboxes (Uneditable names)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -532,7 +526,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
           {/* Option to add additional applicants */}
           <div className="pt-4">
             <h4 className="font-medium mb-2 flex items-center justify-between">
-              <span>Additional Applicants</span>
+              <span>+ Add Applicant</span>
               <Button 
                 type="button" 
                 size="sm" 
@@ -548,7 +542,6 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                 {additionalApplicantFields.map((field, index) => (
                   <Card key={field.id}>
                     <CardContent className="pt-6">
-                      {/* Same applicant form fields as in "No Applicant Configured" mode */}
                       <div className="flex justify-between items-center mb-4">
                         <h4 className="font-medium">Applicant {index + 1}</h4>
                         <Button
@@ -563,13 +556,12 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                       </div>
                       
                       <div className="grid gap-6 sm:grid-cols-2">
-                        {/* Same fields as above */}
                         <FormField
                           control={form.control}
                           name={`applicants.additionalApplicants.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Full Name</FormLabel>
+                              <FormLabel>Name</FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter applicant's full name" {...field} />
                               </FormControl>
@@ -594,12 +586,12 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="natural_person">Human (Natural Person)</SelectItem>
+                                  <SelectItem value="natural_person">Human</SelectItem>
                                   <SelectItem value="startup">Startup</SelectItem>
-                                  <SelectItem value="small_entity">Small Entity</SelectItem>
-                                  <SelectItem value="large_entity">Large Entity</SelectItem>
-                                  <SelectItem value="education_institute">Educational Institute</SelectItem>
-                                  <SelectItem value="govt_entity">Government Entity</SelectItem>
+                                  <SelectItem value="small_entity">Small</SelectItem>
+                                  <SelectItem value="large_entity">Large</SelectItem>
+                                  <SelectItem value="education_institute">Education Institute</SelectItem>
+                                  <SelectItem value="govt_entity">Govt Entity</SelectItem>
                                   <SelectItem value="woman">Woman</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -608,7 +600,6 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                           )}
                         />
                         
-                        {/* Other fields (same as above) */}
                         <FormField
                           control={form.control}
                           name={`applicants.additionalApplicants.${index}.nationality`}
@@ -642,7 +633,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                           name={`applicants.additionalApplicants.${index}.residency`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Country of Residence</FormLabel>
+                              <FormLabel>Residency</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
                                 defaultValue={field.value}

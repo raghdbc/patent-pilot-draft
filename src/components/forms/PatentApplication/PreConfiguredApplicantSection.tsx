@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApplicantCategory, YesNoOption } from "@/models/patentApplication";
+import { YesNoOption } from "@/models/patentApplication";
 import { FormTooltip } from "../FormTooltip";
 
 // Simplified country and state lists
@@ -75,9 +75,9 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
   
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Pre-Configure Applicant</h3>
+      <h3 className="text-lg font-medium">Pre-Configure Applicant (Optional)</h3>
       <p className="text-muted-foreground">
-        Optionally pre-configure an applicant that can be used throughout the application
+        Optionally pre-configure an applicant that can be used in Fixed or Fixed++ mode
       </p>
       
       <FormField
@@ -86,7 +86,7 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
         render={({ field }) => (
           <FormItem className="space-y-3">
             <FormLabel>
-              Do you want to pre-configure an applicant?
+              Do you want to preconfigure the applicant?
               <FormTooltip content="Pre-configuring an applicant allows you to use it in Fixed or Fixed++ mode later" />
             </FormLabel>
             <FormControl>
@@ -123,7 +123,7 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
                   name="preConfiguredApplicant.name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Applicant Name</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter applicant's full name" {...field} />
                       </FormControl>
@@ -148,12 +148,12 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="natural_person">Human (Natural Person)</SelectItem>
+                          <SelectItem value="natural_person">Human</SelectItem>
                           <SelectItem value="startup">Startup</SelectItem>
-                          <SelectItem value="small_entity">Small Entity</SelectItem>
-                          <SelectItem value="large_entity">Large Entity</SelectItem>
-                          <SelectItem value="education_institute">Educational Institute</SelectItem>
-                          <SelectItem value="govt_entity">Government Entity</SelectItem>
+                          <SelectItem value="small_entity">Small</SelectItem>
+                          <SelectItem value="large_entity">Large</SelectItem>
+                          <SelectItem value="education_institute">Education Institute</SelectItem>
+                          <SelectItem value="govt_entity">Govt Entity</SelectItem>
                           <SelectItem value="woman">Woman</SelectItem>
                         </SelectContent>
                       </Select>
@@ -198,7 +198,7 @@ export function PreConfiguredApplicantSection({ form }: PreConfiguredApplicantSe
                   name="preConfiguredApplicant.residency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country of Residence</FormLabel>
+                      <FormLabel>Residency</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
