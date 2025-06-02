@@ -397,9 +397,9 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
               <User className="h-5 w-5 mr-2" />
               Pre-configured Applicant (Read-only)
             </CardTitle>
-            <CardDescription>
+            <FormDescription>
               Cannot add/edit anything in Fixed mode
-            </CardDescription>
+            </FormDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
