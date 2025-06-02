@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
 import {
@@ -148,51 +149,6 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
       {/* Mode: No Applicant Configured */}
       {applicantMode === 'no_applicant_configured' && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Select Inventors as Applicants (Non-editable list)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {inventors.length > 0 ? (
-                <div className="space-y-4">
-                  {inventors.map((inventor: any, index: number) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <FormField
-                        control={form.control}
-                        name={`applicants.fromInventors`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(inventor.name)}
-                                onCheckedChange={(checked) => {
-                                  const currentValue = field.value || [];
-                                  if (checked) {
-                                    field.onChange([...currentValue, inventor.name]);
-                                  } else {
-                                    field.onChange(currentValue.filter((name: string) => name !== inventor.name));
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              {inventor.name}
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No inventors added yet. Please add inventors first.</p>
-              )}
-            </CardContent>
-          </Card>
-          
           <div className="pt-4">
             <h4 className="font-medium mb-2 flex items-center justify-between">
               <span>+ Add Applicant</span>
@@ -379,7 +335,7 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
               </div>
             ) : (
               <div className="text-center py-8 border border-dashed rounded-lg">
-                <p className="text-muted-foreground mb-4">No additional applicants added yet</p>
+                <p className="text-muted-foreground mb-4">No applicants added yet</p>
                 <Button onClick={handleAddApplicant}>
                   <Plus className="mr-2 h-4 w-4" /> Add Applicant
                 </Button>
@@ -474,52 +430,6 @@ export function ApplicantDetailsSection({ form }: ApplicantDetailsSectionProps) 
                   <p className="text-muted-foreground whitespace-pre-line">{preConfiguredApplicant.address}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          
-          {/* Show inventor checkboxes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Inventor Checkboxes (Uneditable names)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {inventors.length > 0 ? (
-                <div className="space-y-4">
-                  {inventors.map((inventor: any, index: number) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <FormField
-                        control={form.control}
-                        name={`applicants.fromInventors`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(inventor.name)}
-                                onCheckedChange={(checked) => {
-                                  const currentValue = field.value || [];
-                                  if (checked) {
-                                    field.onChange([...currentValue, inventor.name]);
-                                  } else {
-                                    field.onChange(currentValue.filter((name: string) => name !== inventor.name));
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              {inventor.name}
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No inventors added yet. Please add inventors first.</p>
-              )}
             </CardContent>
           </Card>
           
