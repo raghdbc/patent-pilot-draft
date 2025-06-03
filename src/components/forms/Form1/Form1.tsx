@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Form } from "@/components/ui/form";
 import { useGenerateDocument } from "@/hooks/useGenerateDocument";
 import { supabase } from "@/integrations/supabase/client";
 import { createPatentApplication, formDataToApplicantData, updatePatentApplication } from "@/services/patentService";
@@ -262,47 +262,49 @@ export function Form1() {
             <TabsContent value="fillForm" className="space-y-6 mt-6">
               <FormProgress currentStep={step} totalSteps={totalSteps} />
               
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Step 1: Basic Information */}
-                {step === 1 && <BasicInfoSection form={form} />}
-                
-                {/* Step 2: Applicant Information */}
-                {step === 2 && <ApplicantSection form={form} />}
-                
-                {/* Step 3: Inventor Information */}
-                {step === 3 && <InventorSection form={form} />}
-                
-                {/* Step 4: Additional Details */}
-                {step === 4 && <AdditionalDetailsSection form={form} />}
-                
-                <div className="flex justify-between pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={step === 1}
-                  >
-                    Previous
-                  </Button>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  {/* Step 1: Basic Information */}
+                  {step === 1 && <BasicInfoSection form={form} />}
                   
-                  {step < totalSteps ? (
-                    <Button type="button" onClick={nextStep}>
-                      Next
+                  {/* Step 2: Applicant Information */}
+                  {step === 2 && <ApplicantSection form={form} />}
+                  
+                  {/* Step 3: Inventor Information */}
+                  {step === 3 && <InventorSection form={form} />}
+                  
+                  {/* Step 4: Additional Details */}
+                  {step === 4 && <AdditionalDetailsSection form={form} />}
+                  
+                  <div className="flex justify-between pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={prevStep}
+                      disabled={step === 1}
+                    >
+                      Previous
                     </Button>
-                  ) : (
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Complete Form"
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </form>
+                    
+                    {step < totalSteps ? (
+                      <Button type="button" onClick={nextStep}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Complete Form"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
             </TabsContent>
             
             <TabsContent value="preview" className="mt-6 animate-fade-in">
