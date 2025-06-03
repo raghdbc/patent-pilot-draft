@@ -2,16 +2,14 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-interface SheetCount {
-  description: number;
-  abstract: number;
-  claims: number;
-  drawings: number;
-}
-
 interface SheetCountTableProps {
-  sheetCount: SheetCount;
-  handleSheetCountChange: (type: keyof SheetCount, value: string) => void;
+  sheetCount: {
+    description: number;
+    abstract: number;
+    claims: number;
+    drawings: number;
+  };
+  handleSheetCountChange: (type: keyof typeof sheetCount, value: string) => void;
   totalSheetCount: number;
   fees: any;
   feeCategory: string;
@@ -33,15 +31,13 @@ export function SheetCountTable({
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-muted">
-              <th className="border p-2 text-left">Item</th>
-              <th className="border p-2 text-left">Number of sheets</th>
+              <th className="border p-2 text-left">Document Type</th>
+              <th className="border p-2 text-left">Number of Sheets</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border p-2">
-                Patent document (from title to end of detailed description)
-              </td>
+              <td className="border p-2">Description</td>
               <td className="border p-2">
                 <Input
                   type="number"
@@ -74,7 +70,7 @@ export function SheetCountTable({
               </td>
             </tr>
             <tr>
-              <td className="border p-2">Drawing sheets</td>
+              <td className="border p-2">Drawings</td>
               <td className="border p-2">
                 <Input
                   type="number"
@@ -84,8 +80,8 @@ export function SheetCountTable({
                 />
               </td>
             </tr>
-            <tr>
-              <td className="border p-2 font-medium">Total sheets:</td>
+            <tr className="bg-muted">
+              <td className="border p-2 font-medium">Total Sheets</td>
               <td className="border p-2 font-medium">{totalSheetCount}</td>
             </tr>
           </tbody>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,12 +16,16 @@ import { FormProgress } from "../FormProgress";
 import { BasicInfoSection } from "./sections/BasicInfoSection";
 import { ApplicantSection } from "./ApplicantSection";
 import { InventorSection } from "./InventorSection";
+import { PriorityClaimsSection } from "./sections/PriorityClaimsSection";
+import { FeeCalculationSection } from "./sections/FeeCalculationSection";
+import { DeclarationsSection } from "./sections/DeclarationsSection";
+import { AttachmentsSection } from "./sections/AttachmentsSection";
 import { AdditionalDetailsSection } from "./sections/AdditionalDetailsSection";
 import { FormPreview } from "./sections/FormPreview";
 
 export function Form1() {
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 8;
   const [activeTab, setActiveTab] = useState("fillForm");
   const { generateDocument, isGenerating } = useGenerateDocument();
   const [isSaving, setIsSaving] = useState(false);
@@ -38,9 +43,24 @@ export function Form1() {
       inventorName: "",
       inventorAddress: "",
       inventorNationality: "Indian",
+      inventorAsApplicant: true,
       claimPriority: false,
       priorityDetails: "",
+      priorityCountry: "",
+      priorityApplicationNumber: "",
+      priorityFilingDate: "",
+      claimCount: "1",
+      drawingCount: "0",
+      sheetCount: 0,
+      fees: 0,
+      publicationPreference: "ordinary",
       additionalInfo: "",
+      declarationOfInventorship: false,
+      declarationOfOwnership: false,
+      provisionalSpecification: false,
+      completeSpecification: false,
+      drawings: false,
+      sequenceListing: false,
     },
   });
 
@@ -89,8 +109,8 @@ export function Form1() {
         inventor_address: data.inventorAddress,
         inventor_nationality: data.inventorNationality,
         claim_priority: data.claimPriority,
-        priority_details: data.priorityDetails,
-        additional_info: data.additionalInfo,
+        priority_details: data.priorityDetails || "",
+        additional_info: data.additionalInfo || "",
         status: "draft",
       };
       
@@ -234,6 +254,29 @@ export function Form1() {
     }
   };
 
+  const renderStepContent = () => {
+    switch (step) {
+      case 1:
+        return <BasicInfoSection form={form} />;
+      case 2:
+        return <ApplicantSection form={form} />;
+      case 3:
+        return <InventorSection form={form} />;
+      case 4:
+        return <PriorityClaimsSection form={form} />;
+      case 5:
+        return <FeeCalculationSection form={form} />;
+      case 6:
+        return <DeclarationsSection form={form} />;
+      case 7:
+        return <AttachmentsSection form={form} />;
+      case 8:
+        return <AdditionalDetailsSection form={form} />;
+      default:
+        return <BasicInfoSection form={form} />;
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <Card>
@@ -264,17 +307,7 @@ export function Form1() {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  {/* Step 1: Basic Information */}
-                  {step === 1 && <BasicInfoSection form={form} />}
-                  
-                  {/* Step 2: Applicant Information */}
-                  {step === 2 && <ApplicantSection form={form} />}
-                  
-                  {/* Step 3: Inventor Information */}
-                  {step === 3 && <InventorSection form={form} />}
-                  
-                  {/* Step 4: Additional Details */}
-                  {step === 4 && <AdditionalDetailsSection form={form} />}
+                  {renderStepContent()}
                   
                   <div className="flex justify-between pt-4">
                     <Button
