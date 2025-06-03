@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateTotalFee, formatCurrency, calculateTotalSheets } from "@/utils/patentFormHelpers";
 import { ApplicantCategory } from "@/models/patentApplication";
+import { usePatentDocumentGenerator } from "@/hooks/usePatentDocumentGenerator";
+import { Download } from "lucide-react";
 
 interface FormSummaryProps {
   form: UseFormReturn<any>;
   onEdit: () => void;
-  onDownload: () => void;
+  onDownload?: () => void;
   isGenerating?: boolean;
 }
 
-export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: FormSummaryProps) {
+export function FormSummary({ form, onEdit }: FormSummaryProps) {
   const [viewMode, setViewMode] = useState<"summary" | "json">("summary");
+  const { generateDocument, isGenerating } = usePatentDocumentGenerator();
   const formData = form.getValues();
   
   // Calculate total sheets
@@ -51,6 +54,10 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
     isExpeditedExamination
   );
 
+  const handleDownloadDocument = async () => {
+    await generateDocument(formData);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -59,8 +66,15 @@ export function FormSummary({ form, onEdit, onDownload, isGenerating = false }: 
           <Button variant="outline" onClick={onEdit}>
             Edit Application
           </Button>
-          <Button onClick={onDownload} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Download Document"}
+          <Button onClick={handleDownloadDocument} disabled={isGenerating}>
+            {isGenerating ? (
+              "Generating..."
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download Document
+              </>
+            )}
           </Button>
         </div>
       </div>
