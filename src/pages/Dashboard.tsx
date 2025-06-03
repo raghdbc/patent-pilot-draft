@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { FileText, BookOpen, Download } from "lucide-react";
+import { FileText, BookOpen, Download, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,13 +31,73 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold mb-2 md:mb-0">
             {user ? `Welcome, ${user.user_metadata?.full_name || 'User'}` : 'Dashboard'}
           </h1>
-          <div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/form1">
+                <ClipboardList className="mr-2 h-4 w-4" />
+                Form 1 - Patent Application
+              </Link>
+            </Button>
             <Button asChild>
               <Link to="/forms">
                 <FileText className="mr-2 h-4 w-4" />
                 New Patent Application
               </Link>
             </Button>
+          </div>
+        </div>
+        
+        {/* Quick Actions Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="hover:border-primary transition-colors">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <ClipboardList className="mr-2 h-5 w-5" />
+                  Form 1 - Application for Grant of Patent
+                </CardTitle>
+                <CardDescription>
+                  File for patent protection with the official Form 1
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Complete the standard patent application form with step-by-step guidance and automatic document generation.
+                </p>
+              </CardContent>
+              <div className="p-3 pt-0">
+                <Button className="w-full" asChild>
+                  <Link to="/form1">
+                    Start Form 1
+                  </Link>
+                </Button>
+              </div>
+            </Card>
+            
+            <Card className="hover:border-primary transition-colors">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Advanced Patent Application
+                </CardTitle>
+                <CardDescription>
+                  Comprehensive patent application with detailed sections
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Use the advanced form for complex applications with multiple inventors, applicants, and detailed technical content.
+                </p>
+              </CardContent>
+              <div className="p-3 pt-0">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/forms">
+                    Start Advanced Form
+                  </Link>
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
         
@@ -146,11 +205,17 @@ export default function Dashboard() {
           ) : (
             <Card className="p-6 text-center">
               <p className="text-muted-foreground mb-4">You don't have any patent applications yet.</p>
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-2">
                 <Button asChild>
+                  <Link to="/form1">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Start with Form 1
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
                   <Link to="/forms">
                     <FileText className="mr-2 h-4 w-4" />
-                    Create Patent Application
+                    Advanced Form
                   </Link>
                 </Button>
               </div>
