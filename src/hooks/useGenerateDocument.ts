@@ -65,14 +65,14 @@ export function useGenerateDocument() {
       }
       
       const blob = new Blob([bytes], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+        type: 'text/plain' 
       });
       
       // Create download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = result.fileName || `${templateName}-${Date.now()}.docx`;
+      link.download = result.fileName || `${templateName}-${Date.now()}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
