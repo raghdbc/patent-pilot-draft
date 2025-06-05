@@ -9,7 +9,7 @@ interface SheetCountTableProps {
     claims: number;
     drawings: number;
   };
-  handleSheetCountChange: (type: keyof typeof sheetCount, value: string) => void;
+  handleSheetCountChange: (type: keyof SheetCountTableProps['sheetCount'], value: string) => void;
   totalSheetCount: number;
   fees: any;
   feeCategory: string;
