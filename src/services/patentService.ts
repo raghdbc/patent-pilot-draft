@@ -125,8 +125,28 @@ export function formDataToApplicantData(formData: any): ApplicantData {
     return String(value);
   };
 
+  // Map form application type to schema application type
+  const mapApplicationType = (formType: string): 'ordinary' | 'convention' | 'pct-np' | 'pph' => {
+    switch (formType) {
+      case 'Provisional':
+      case 'provisional':
+        return 'ordinary';
+      case 'Complete':
+      case 'complete':
+        return 'ordinary';
+      case 'convention':
+        return 'convention';
+      case 'pct-np':
+        return 'pct-np';
+      case 'pph':
+        return 'pph';
+      default:
+        return 'ordinary';
+    }
+  };
+
   return {
-    application_type: safeString(formData.applicationType) || 'ordinary',
+    application_type: mapApplicationType(safeString(formData.applicationType)),
     application_no: `IN${new Date().getFullYear()}${Math.floor(Math.random() * 900000) + 100000}`,
     filing_date: new Date().toLocaleDateString('en-GB'),
     fee_paid: `₹${formData.fees || 0}`,

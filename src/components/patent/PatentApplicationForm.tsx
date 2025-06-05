@@ -138,7 +138,7 @@ const patentFormSchema = z.object({
 export function PatentApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { generateAllDocuments, isGenerating } = useGenerateDocument();
+  const { generateDocument, isGenerating } = useGenerateDocument();
   
   // Initialize the form with default values
   const form = useForm<PatentFormData>({
@@ -298,8 +298,8 @@ export function PatentApplicationForm() {
         description: "Your patent application has been submitted successfully",
       });
       
-      // Generate documents
-      // await generateAllDocuments(data);
+      // Generate documents - using the correct method name
+      // await generateDocument('patent-application', transformedData);
       
     } catch (error) {
       console.error("Error submitting form:", error);

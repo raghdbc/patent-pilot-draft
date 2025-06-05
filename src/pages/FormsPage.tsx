@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PatentApplicationForm } from "@/components/patent/PatentApplicationForm";
 import { FileText, Plus, Loader2 } from "lucide-react";
-import { getUserPatentApplications } from "@/services/patentService";
+import { getPatentApplications } from "@/services/patentService";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,7 @@ export default function FormsPage() {
         if (session) {
           setIsAuthenticated(true);
           // Load user's patent applications
-          const data = await getUserPatentApplications();
+          const data = await getPatentApplications(session.user.id);
           setApplications(data);
         } else {
           setIsAuthenticated(false);
